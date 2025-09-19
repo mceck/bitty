@@ -1,0 +1,32 @@
+{
+  "name": "bwtui",
+  "version": "0.0.0",
+  "license": "MIT",
+  "bin": "dist/cli.js",
+  "type": "module",
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "tsc && node dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "clipboardy": "^4.0.0",
+    "ink": "^6.3.0",
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "@sindresorhus/tsconfig": "^8.0.1",
+    "@types/react": "^19.1.13",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "ink-testing-library": "^4.0.0",
+    "typescript": "^5.0.3"
+  }
+}
