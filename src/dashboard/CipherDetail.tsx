@@ -1,4 +1,4 @@
-import { Box, Text, useFocusManager } from "ink";
+import { Box, Text, useFocusManager, useStdout } from "ink";
 import { TextInput } from "../components/TextInput.js";
 import { primaryLight } from "../theme/style.js";
 import { Cipher } from "mcbw";
@@ -16,6 +16,7 @@ export function CipherDetail({
   onSave: (cipher: Cipher) => void;
 }) {
   const { focusNext } = useFocusManager();
+  const { stdout } = useStdout();
   return (
     <Box
       flexDirection="column"
@@ -116,14 +117,15 @@ export function CipherDetail({
           </Box>
 
           <Box flexDirection="row">
-            <Box width={15} marginRight={2}>
+            <Box width={15} flexShrink={0} marginRight={2}>
               <Text bold color={isFocused ? primaryLight : "gray"}>
                 Notes:
               </Text>
             </Box>
-            <Box flexGrow={1} height={6}>
+            <Box flexGrow={1} height={stdout.rows - 26}>
               <TextInput
                 multiline
+                maxLines={stdout.rows - 28}
                 isActive={isFocused}
                 value={selectedCipher.notes ?? ""}
                 onChange={(value) =>

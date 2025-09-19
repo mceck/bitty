@@ -17,6 +17,7 @@ type Props = {
   autoFocus?: boolean;
   inline?: boolean;
   multiline?: boolean;
+  maxLines?: number;
 };
 
 export const TextInput = ({
@@ -29,11 +30,13 @@ export const TextInput = ({
   autoFocus,
   inline,
   multiline,
+  maxLines = 1,
   onChange,
   onSubmit,
   onCopy,
 }: Props) => {
   const [cursor, setCursor] = useState(value.length);
+  const [scrollOffset, setScrollOffset] = useState(0);
   const { isFocused } = useFocus({ id, isActive, autoFocus });
 
   const displayValue = useMemo(() => {
@@ -42,14 +45,54 @@ export const TextInput = ({
       displayValue = "•".repeat(value.length);
     }
     displayValue = (displayValue?.length ? displayValue : placeholder) ?? "";
+
+    if (multiline && maxLines > 0) {
+      const lines = displayValue.split("\n");
+      const currentLine =
+        displayValue.substring(0, cursor).split("\n").length - 1;
+
+      if (currentLine < scrollOffset) {
+        setScrollOffset(currentLine);
+      } else if (currentLine >= scrollOffset + maxLines) {
+        setScrollOffset(currentLine - maxLines + 1);
+      }
+
+      displayValue = lines
+        .slice(scrollOffset, scrollOffset + maxLines)
+        .join("\n");
+    }
+
     if (isFocused) {
-      let beforeCursor = displayValue.slice(0, cursor);
-      let atCursor = displayValue.slice(cursor, cursor + 1) || " ";
-      let afterCursor = displayValue.slice(cursor + 1);
+      let visibleCursor = cursor;
+      if (multiline && maxLines > 0) {
+        const lines = value.split("\n");
+        const cursorLineIndex =
+          value.substring(0, cursor).split("\n").length - 1;
+
+        if (
+          cursorLineIndex >= scrollOffset &&
+          cursorLineIndex < scrollOffset + maxLines
+        ) {
+          const visibleStart = lines
+            .slice(0, scrollOffset)
+            .reduce((acc, line) => acc + line.length + 1, 0);
+
+          visibleCursor = cursor - visibleStart;
+        } else {
+          visibleCursor = 0;
+        }
+      }
+
+      let beforeCursor = displayValue.slice(0, visibleCursor);
+      let atCursor =
+        displayValue.slice(visibleCursor, visibleCursor + 1) || " ";
+      let afterCursor = displayValue.slice(visibleCursor + 1);
+
       if (atCursor === "\n") {
         atCursor = " ";
         afterCursor = "\n" + afterCursor;
       }
+
       displayValue =
         beforeCursor +
         chalk.inverse(atCursor) +
@@ -60,7 +103,16 @@ export const TextInput = ({
 
   useEffect(() => {
     if (cursor > value.length) setCursor(value.length);
-  }, [value]);
+
+    if (multiline && maxLines > 0) {
+      const currentLine = value.substring(0, cursor).split("\n").length - 1;
+      if (currentLine < scrollOffset) {
+        setScrollOffset(currentLine);
+      } else if (currentLine >= scrollOffset + maxLines) {
+        setScrollOffset(currentLine - maxLines + 1);
+      }
+    }
+  }, [value, cursor, multiline, maxLines]);
 
   useInput((input, key) => {
     if (!isFocused) return;
@@ -96,48 +148,71 @@ export const TextInput = ({
     } else if (key.rightArrow && cursor < value.length) {
       setCursor(cursor + 1);
     } else if (key.upArrow && multiline) {
-      const prevNewline = value.lastIndexOf("\n", Math.max(0, cursor - 1));
-      if (prevNewline !== -1) {
-        const prevPrevNewline = value.lastIndexOf(
-          "\n",
-          Math.max(0, prevNewline - 1)
-        );
-        const col = cursor - prevNewline - 1;
-        const lineLen =
-          prevNewline - (prevPrevNewline === -1 ? 0 : prevPrevNewline + 1);
-        console.log({ cursor, prevPrevNewline, prevNewline, col, lineLen });
-        if (lineLen > col) {
-          setCursor(prevNewline - lineLen + col);
-          return;
+      const lines = value.split("\n");
+      const currentLine = value.substring(0, cursor).split("\n").length - 1;
+      const currentLineStart =
+        currentLine > 0 ? lines.slice(0, currentLine).join("\n").length + 1 : 0;
+      const currentCol = cursor - currentLineStart;
+
+      if (currentLine > 0) {
+        const targetLine = currentLine - 1;
+        const targetLineStart =
+          targetLine > 0 ? lines.slice(0, targetLine).join("\n").length + 1 : 0;
+        const targetLineLength = lines[targetLine]?.length ?? 0;
+
+        if (currentLine <= scrollOffset) {
+          setScrollOffset(Math.max(0, scrollOffset - 1));
         }
-        setCursor(prevNewline + lineLen);
+
+        const newCol = Math.min(currentCol, targetLineLength);
+        setCursor(targetLineStart + newCol);
       } else {
         setCursor(0);
       }
     } else if (key.downArrow && multiline) {
-      const nextNewline = value.indexOf("\n", cursor);
-      let prevNewline = value.lastIndexOf("\n", Math.max(0, cursor - 1));
-      const col = cursor - prevNewline - 1;
-      if (nextNewline !== -1) {
-        let endl = value.indexOf("\n", nextNewline + 1);
-        if (endl === -1) endl = value.length;
-        const lineLen = endl - nextNewline;
-        if (lineLen > col) {
-          setCursor(nextNewline + 1 + col);
-        } else {
-          setCursor(nextNewline + lineLen);
+      const lines = value.split("\n");
+      const currentLine = value.substring(0, cursor).split("\n").length - 1;
+      const currentLineStart =
+        currentLine > 0 ? lines.slice(0, currentLine).join("\n").length + 1 : 0;
+      const currentCol = cursor - currentLineStart;
+
+      if (currentLine < lines.length - 1) {
+        const targetLine = currentLine + 1;
+        const targetLineStart =
+          lines.slice(0, targetLine).join("\n").length + 1;
+        const targetLineLength = lines[targetLine]?.length ?? 0;
+
+        if (currentLine >= scrollOffset + maxLines - 1) {
+          setScrollOffset(scrollOffset + 1);
         }
+
+        const newCol = Math.min(currentCol, targetLineLength);
+        setCursor(targetLineStart + newCol);
       } else {
         setCursor(value.length);
       }
     } else if (key.return) {
       if (multiline) {
-        onChange?.(value.slice(0, cursor) + "\n" + value.slice(cursor));
-        setCursor(cursor + 1);
+        const newValue = value.slice(0, cursor) + "\n" + value.slice(cursor);
+        const newCursor = cursor + 1;
+        const newCurrentLine =
+          newValue.substring(0, newCursor).split("\n").length - 1;
+
+        if (newCurrentLine >= scrollOffset + maxLines) {
+          setScrollOffset(newCurrentLine - maxLines + 1);
+        }
+
+        onChange?.(newValue);
+        setCursor(newCursor);
       } else {
         onSubmit?.();
       }
     } else if (input) {
+      if (multiline) {
+        input = input.replaceAll(/[\r\n]/g, "\n");
+      } else {
+        input = input.replaceAll(/[^\x20-\x7E]/g, "");
+      }
       if (input.length) {
         onChange?.(value.slice(0, cursor) + input + value.slice(cursor));
         setCursor(cursor + input.length);
