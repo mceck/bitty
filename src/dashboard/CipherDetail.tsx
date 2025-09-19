@@ -121,7 +121,7 @@ export function CipherDetail({
                 Notes:
               </Text>
             </Box>
-            <Box flexGrow={1} height={7}>
+            <Box flexGrow={1} height={6}>
               <TextInput
                 multiline
                 isActive={isFocused}

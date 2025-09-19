@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Text, useStdout } from "ink";
 import { primary, primaryDark, primaryLight } from "../theme/style.js";
 import { Cipher, CipherType } from "mcbw";
 import { ScrollView } from "../components/ScrollView.js";
@@ -27,6 +27,7 @@ export function VaultList({
   isFocused: boolean;
   onSelect: (index: number) => void;
 }) {
+  const { stdout } = useStdout();
   return (
     <Box
       flexDirection="column"
@@ -39,7 +40,7 @@ export function VaultList({
     >
       <ScrollView
         isActive={isFocused}
-        count={18}
+        count={stdout.rows - 14}
         list={filteredCiphers}
         onSelect={onSelect}
       >

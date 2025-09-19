@@ -6,29 +6,36 @@ import { useCallback, useEffect, useState } from "react";
 
 interface BwConfig {
   baseUrl?: string;
-  accessToken: string;
-  keys: BwKeys;
+  username?: string;
+  password?: string;
 }
 
 export const bwClient = new Client();
 const configPath = path.join(os.homedir(), ".config", "bwtui", "config.json");
 
-async function loadConfig() {
+export async function loadConfig() {
   if (fs.existsSync(configPath)) {
     const content = await fs.promises.readFile(configPath, "utf-8");
     const config = JSON.parse(content);
     if (config.baseUrl) {
       await bwClient.setUrls({ baseUrl: config.baseUrl });
     }
-    if (config.accessToken && config.keys) {
-      bwClient.token = config.accessToken;
-      bwClient.keys = config.keys;
+    if (config.username && config.password) {
+      await bwClient.login(config.username, config.password);
+      return true;
     }
   }
+  return false;
 }
-async function saveConfig(config: BwConfig) {
+export async function saveConfig(config: BwConfig) {
   await fs.promises.mkdir(path.dirname(configPath), { recursive: true });
   await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+}
+
+export async function clearConfig() {
+  if (fs.existsSync(configPath)) {
+    await fs.promises.unlink(configPath);
+  }
 }
 
 export const useBwSync = () => {

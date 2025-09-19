@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { Box, Text, useFocusManager, useInput } from "ink";
+import { Box, Text, useFocusManager, useInput, useStdout } from "ink";
 import { TextInput } from "../components/TextInput.js";
 import { Button } from "../components/Button.js";
 import { VaultList } from "./VaultList.js";
 import { CipherDetail } from "./CipherDetail.js";
 import { HelpBar } from "./HelpBar.js";
 import { primary } from "../theme/style.js";
-import { bwClient, useBwSync } from "../hooks/bw.js";
+import { bwClient, clearConfig, useBwSync } from "../hooks/bw.js";
 import { Cipher, SyncResponse } from "mcbw";
 
 type Props = {
@@ -26,6 +26,7 @@ export function DashboardView({ onLogout }: Props) {
   const [detailMode, setDetailMode] = useState<DetailViewMode>("view");
   const [editedCipher, setEditedCipher] = useState<Cipher | null>(null);
   const { focus, focusNext } = useFocusManager();
+  const { stdout } = useStdout();
 
   const filteredCiphers = useMemo(() => {
     return (
@@ -50,8 +51,9 @@ export function DashboardView({ onLogout }: Props) {
     if (focusedComponent === "detail") focusNext();
   }, [focusedComponent]);
 
-  useInput((input, key) => {
+  useInput(async (input, key) => {
     if (key.ctrl && input === "w") {
+      await clearConfig();
       onLogout();
       return;
     }
@@ -98,7 +100,7 @@ export function DashboardView({ onLogout }: Props) {
   });
 
   return (
-    <Box flexDirection="column" width="100%">
+    <Box flexDirection="column" width="100%" minHeight={stdout.rows - 2}>
       <Box
         borderStyle="double"
         borderColor={primary}
@@ -126,7 +128,7 @@ export function DashboardView({ onLogout }: Props) {
         />
       </Box>
 
-      <Box height={20}>
+      <Box minHeight={20} flexGrow={1}>
         <VaultList
           filteredCiphers={filteredCiphers}
           isFocused={focusedComponent === "list"}
