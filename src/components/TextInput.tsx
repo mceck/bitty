@@ -1,4 +1,4 @@
-import { Text, Box, useFocus, useInput, useStdin } from "ink";
+import { Text, Box, useFocus, useInput } from "ink";
 import { primary } from "../theme/style.js";
 import { useEffect, useMemo, useState } from "react";
 import clipboard from "clipboardy";
@@ -41,6 +41,7 @@ export const TextInput = ({
     if (isPassword && (showPasswordOnFocus ? !isFocused : true)) {
       displayValue = "•".repeat(value.length);
     }
+    displayValue = (displayValue?.length ? displayValue : placeholder) ?? "";
     if (isFocused) {
       let beforeCursor = displayValue.slice(0, cursor);
       let atCursor = displayValue.slice(cursor, cursor + 1) || " ";
@@ -54,8 +55,12 @@ export const TextInput = ({
         chalk.inverse(atCursor) +
         (afterCursor ? afterCursor : "");
     }
-    return displayValue || placeholder;
+    return displayValue;
   }, [value, cursor, isFocused]);
+
+  useEffect(() => {
+    if (cursor > value.length) setCursor(value.length);
+  }, [value]);
 
   useInput((input, key) => {
     if (!isFocused) return;

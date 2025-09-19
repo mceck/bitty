@@ -1,21 +1,25 @@
 import { Box, Text, useFocusManager } from "ink";
-import { Cipher } from "./models.js";
 import { TextInput } from "../components/TextInput.js";
 import { primaryLight } from "../theme/style.js";
+import { Cipher } from "mcbw";
+import { Button } from "../components/Button.js";
 
 export function CipherDetail({
   selectedCipher,
   isFocused,
   onChange,
+  onSave,
 }: {
   selectedCipher: Cipher | null | undefined;
   isFocused: boolean;
   onChange: (cipher: Cipher) => void;
+  onSave: (cipher: Cipher) => void;
 }) {
   const { focusNext } = useFocusManager();
   return (
     <Box
       flexDirection="column"
+      width="60%"
       flexGrow={1}
       paddingX={1}
       borderStyle="round"
@@ -117,7 +121,7 @@ export function CipherDetail({
                 Notes:
               </Text>
             </Box>
-            <Box flexGrow={1}>
+            <Box flexGrow={1} height={7}>
               <TextInput
                 multiline
                 isActive={isFocused}
@@ -131,6 +135,7 @@ export function CipherDetail({
               />
             </Box>
           </Box>
+          <Button onClick={() => onSave(selectedCipher!)}>Save</Button>
         </Box>
       )}
     </Box>

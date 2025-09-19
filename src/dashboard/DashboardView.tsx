@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Box, Text, useFocusManager, useInput } from "ink";
 import { TextInput } from "../components/TextInput.js";
 import { Button } from "../components/Button.js";
-import { Cipher, mockCiphers, newCipherTemplate } from "./models.js";
 import { VaultList } from "./VaultList.js";
 import { CipherDetail } from "./CipherDetail.js";
 import { HelpBar } from "./HelpBar.js";
 import { primary } from "../theme/style.js";
+import { bwClient, useBwSync } from "../hooks/bw.js";
+import { Cipher, SyncResponse } from "mcbw";
 
 type Props = {
   onLogout: () => void;
@@ -16,7 +17,8 @@ type FocusableComponent = "list" | "search" | "detail";
 type DetailViewMode = "view" | "new";
 
 export function DashboardView({ onLogout }: Props) {
-  const [ciphers, setCiphers] = useState(mockCiphers);
+  const { sync } = useBwSync();
+  const [syncState, setSyncState] = useState<SyncResponse | null>(sync);
   const [searchQuery, setSearchQuery] = useState("");
   const [listIndex, setListIndex] = useState(0);
   const [focusedComponent, setFocusedComponent] =
@@ -25,9 +27,13 @@ export function DashboardView({ onLogout }: Props) {
   const [editedCipher, setEditedCipher] = useState<Cipher | null>(null);
   const { focus, focusNext } = useFocusManager();
 
-  const filteredCiphers = ciphers.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCiphers = useMemo(() => {
+    return (
+      syncState?.ciphers.filter((c) =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ) ?? []
+    );
+  }, [syncState, searchQuery]);
 
   const selectedCipher =
     detailMode === "new" ? editedCipher : filteredCiphers[listIndex];
@@ -37,11 +43,14 @@ export function DashboardView({ onLogout }: Props) {
   }, [searchQuery]);
 
   useEffect(() => {
+    setSyncState(sync);
+  }, [sync]);
+
+  useEffect(() => {
     if (focusedComponent === "detail") focusNext();
   }, [focusedComponent]);
 
   useInput((input, key) => {
-    console.log({ input, key });
     if (key.ctrl && input === "w") {
       onLogout();
       return;
@@ -54,7 +63,11 @@ export function DashboardView({ onLogout }: Props) {
     }
 
     if (key.escape) {
-      setFocusedComponent("list");
+      if (focusedComponent === "search" && searchQuery?.length) {
+        setSearchQuery("");
+      } else {
+        setFocusedComponent("list");
+      }
       setDetailMode("view");
       return;
     }
@@ -77,7 +90,7 @@ export function DashboardView({ onLogout }: Props) {
       if (key.return || key.tab) setFocusedComponent("detail");
       if (input === "n") {
         setDetailMode("new");
-        setEditedCipher({ ...newCipherTemplate });
+        setEditedCipher({} as any);
         setFocusedComponent("detail");
       }
     } else if (focusedComponent === "detail") {
@@ -108,6 +121,7 @@ export function DashboardView({ onLogout }: Props) {
           onChange={setSearchQuery}
           onSubmit={() => {
             setFocusedComponent("list");
+            focusNext();
           }}
         />
       </Box>
@@ -115,8 +129,8 @@ export function DashboardView({ onLogout }: Props) {
       <Box height={20}>
         <VaultList
           filteredCiphers={filteredCiphers}
-          listIndex={listIndex}
           isFocused={focusedComponent === "list"}
+          onSelect={(index) => setListIndex(index)}
         />
 
         <CipherDetail
@@ -127,14 +141,18 @@ export function DashboardView({ onLogout }: Props) {
               setEditedCipher(cipher);
               return;
             }
-            setCiphers((prev) =>
-              prev.map((c) => (c.id === cipher.id ? cipher : c))
+            const updatedCiphers = syncState?.ciphers.map((c) =>
+              c.id === cipher.id ? cipher : c
             );
+            setSyncState((prev) => ({ ...prev!, ciphers: updatedCiphers! }));
+          }}
+          onSave={(cipher) => {
+            console.log("Saving cipher", cipher);
           }}
         />
       </Box>
 
-      <HelpBar />
+      <HelpBar focus={focusedComponent} />
     </Box>
   );
 }

@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
 
-export function HelpBar() {
+export function HelpBar({ focus }: { focus: "list" | "search" | "detail" }) {
   return (
     <Box
       borderStyle="single"
@@ -12,23 +12,34 @@ export function HelpBar() {
       <Text color="gray">
         <Text bold>/ </Text>Search
       </Text>
+      {focus === "list" ? (
+        <Text color="gray">
+          <Text bold>↑/↓ </Text>Navigate
+        </Text>
+      ) : focus === "detail" ? (
+        <Text color="gray">
+          <Text bold>Tab/Enter </Text>Next Field
+        </Text>
+      ) : (
+        <Text color="gray">
+          <Text bold>Esc </Text>Clear Search
+        </Text>
+      )}
+      {focus === "list" ? (
+        <Text color="gray">
+          <Text bold>Tab/Enter </Text>Select
+        </Text>
+      ) : focus === "detail" ? (
+        <Text color="gray">
+          <Text bold>Esc </Text>Focus List
+        </Text>
+      ) : (
+        <Text color="gray">
+          <Text bold>Tab/Enter </Text>Focus List
+        </Text>
+      )}
       <Text color="gray">
-        <Text bold>↑/↓ </Text>Navigate
-      </Text>
-      <Text color="gray">
-        <Text bold>Tab/Enter </Text>Focus
-      </Text>
-      <Text color="gray">
-        <Text bold>C/Y </Text>Copy
-      </Text>
-      <Text color="gray">
-        <Text bold>Enter </Text>Edit
-      </Text>
-      <Text color="gray">
-        <Text bold>n </Text>New
-      </Text>
-      <Text color="gray">
-        <Text bold>q </Text>Quit
+        <Text bold>Ctrl+w </Text>Logout
       </Text>
     </Box>
   );

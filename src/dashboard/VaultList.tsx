@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
-import { Cipher, CipherType } from "./models.js";
 import { primary, primaryDark, primaryLight } from "../theme/style.js";
+import { Cipher, CipherType } from "mcbw";
+import { ScrollView } from "../components/ScrollView.js";
 
 const getTypeIcon = (type: CipherType) => {
   switch (type) {
@@ -20,11 +21,11 @@ const getTypeIcon = (type: CipherType) => {
 export function VaultList({
   filteredCiphers,
   isFocused,
-  listIndex,
+  onSelect,
 }: {
   filteredCiphers: Cipher[];
   isFocused: boolean;
-  listIndex: number;
+  onSelect: (index: number) => void;
 }) {
   return (
     <Box
@@ -34,26 +35,32 @@ export function VaultList({
       borderColor={isFocused ? primaryLight : "gray"}
       borderRightColor="gray"
       paddingX={1}
+      overflow="hidden"
     >
-      {filteredCiphers.map((cipher, index) => (
-        <Box
-          key={cipher.id}
-          justifyContent="space-between"
-          backgroundColor={
-            listIndex === index ? (isFocused ? primary : primaryDark) : ""
-          }
-        >
-          <Box>
-            <Text>{getTypeIcon(cipher.type)} </Text>
-            <Text
-              color={listIndex === index && isFocused ? "white" : "default"}
-            >
-              {cipher.name}
-            </Text>
+      <ScrollView
+        isActive={isFocused}
+        count={18}
+        list={filteredCiphers}
+        onSelect={onSelect}
+      >
+        {({ el: cipher, selected }) => (
+          <Box
+            key={cipher.id}
+            justifyContent="space-between"
+            backgroundColor={
+              selected ? (isFocused ? primary : primaryDark) : ""
+            }
+          >
+            <Box>
+              <Text>{getTypeIcon(cipher.type)} </Text>
+              <Text color={selected && isFocused ? "white" : "default"}>
+                {cipher.name}
+              </Text>
+            </Box>
+            {cipher.favorite && <Text color="yellow">★</Text>}
           </Box>
-          {cipher.favorite && <Text color="yellow">★</Text>}
-        </Box>
-      ))}
+        )}
+      </ScrollView>
     </Box>
   );
 }
