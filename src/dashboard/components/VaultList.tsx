@@ -1,7 +1,7 @@
 import { Box, Text, useStdout } from "ink";
-import { primary, primaryDark, primaryLight } from "../theme/style.js";
+import { primary, primaryDark, primaryLight } from "../../theme/style.js";
 import { Cipher, CipherType } from "mcbw";
-import { ScrollView } from "../components/ScrollView.js";
+import { ScrollView } from "../../components/ScrollView.js";
 
 const getTypeIcon = (type: CipherType) => {
   switch (type) {

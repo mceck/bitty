@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Text, useFocusManager, useInput, useStdout } from "ink";
 import { TextInput } from "../components/TextInput.js";
-import { VaultList } from "./VaultList.js";
-import { CipherDetail } from "./CipherDetail.js";
-import { HelpBar } from "./HelpBar.js";
+import { VaultList } from "./components/VaultList.js";
+import { CipherDetail } from "./components/CipherDetail.js";
+import { HelpBar } from "./components/HelpBar.js";
 import { primary } from "../theme/style.js";
 import { bwClient, clearConfig, useBwSync } from "../hooks/bw.js";
 import { Cipher, SyncResponse } from "mcbw";
@@ -159,22 +159,8 @@ export function DashboardView({ onLogout }: Props) {
           onSave={async (cipher) => {
             showStatusMessage("Saving...");
             try {
-              const original = bwClient.syncCache?.ciphers.find(
-                (c) => c.id === cipher.id
-              );
-              const decrypted = bwClient.decryptedSyncCache?.ciphers.find(
-                (c) => c.id === cipher.id
-              );
-              if (!original || !decrypted) {
-                throw new Error("Original cipher not found");
-              }
-              const patch = deepDiff(decrypted, cipher);
-              if (patch) {
-                await bwClient.updateSecret(original, patch);
-                showStatusMessage("Saved!", "success");
-              } else {
-                showStatusMessage("Nothing to save");
-              }
+              await bwClient.updateSecret(cipher.id, cipher);
+              showStatusMessage("Saved!", "success");
             } catch (e) {
               showStatusMessage("Synchronization error", "error");
             }
@@ -186,32 +172,3 @@ export function DashboardView({ onLogout }: Props) {
     </Box>
   );
 }
-
-const deepDiff = (obj1: any, obj2: any): any => {
-  if (
-    typeof obj1 !== "object" ||
-    obj1 === null ||
-    typeof obj2 !== "object" ||
-    obj2 === null
-  ) {
-    return obj1 !== obj2 ? obj2 : undefined;
-  }
-
-  let diff: any = Array.isArray(obj2) ? [] : {};
-
-  let changed = false;
-  for (const key in obj2) {
-    if (!(key in obj1)) {
-      diff[key] = obj2[key];
-      changed = true;
-    } else {
-      const subDiff = deepDiff(obj1[key], obj2[key]);
-      if (subDiff !== undefined) {
-        diff[key] = subDiff;
-        changed = true;
-      }
-    }
-  }
-
-  return changed ? diff : undefined;
-};
