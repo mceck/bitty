@@ -39,6 +39,9 @@ export function HelpBar({ focus }: { focus: "list" | "search" | "detail" }) {
         </Text>
       )}
       <Text color="gray">
+        <Text bold>Ctrl+y </Text>Copy Field
+      </Text>
+      <Text color="gray">
         <Text bold>Ctrl+w </Text>Logout
       </Text>
     </Box>

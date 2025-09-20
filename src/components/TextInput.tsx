@@ -3,6 +3,7 @@ import { primary } from "../theme/style.js";
 import { useEffect, useMemo, useState } from "react";
 import clipboard from "clipboardy";
 import chalk from "chalk";
+import { useStatusMessage } from "../hooks/status-message.js";
 
 type Props = {
   id?: string;
@@ -38,6 +39,7 @@ export const TextInput = ({
   const [cursor, setCursor] = useState(value.length);
   const [scrollOffset, setScrollOffset] = useState(0);
   const { isFocused } = useFocus({ id, isActive, autoFocus });
+  const { showStatusMessage } = useStatusMessage();
 
   const displayValue = useMemo(() => {
     let displayValue = value;
@@ -119,11 +121,12 @@ export const TextInput = ({
 
   useInput((input, key) => {
     if (!isFocused) return;
-    if (key.meta && input === "c") {
+    if (key.ctrl && input === "y") {
       if (onCopy) {
         onCopy(value);
       } else {
         clipboard.writeSync(value);
+        showStatusMessage("📋 Copied to clipboard!", "success");
       }
     } else if (key.backspace || (key.delete && value?.length && cursor > 0)) {
       onChange?.(value.slice(0, Math.max(0, cursor - 1)) + value.slice(cursor));
