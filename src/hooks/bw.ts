@@ -1,7 +1,7 @@
 import os from "os";
 import fs from "fs";
 import path from "path";
-import { Client, SyncResponse, BwKeys } from "mcbw";
+import { Client, SyncResponse, CipherType } from "mcbw";
 import { useCallback, useEffect, useState } from "react";
 
 interface BwConfig {
@@ -40,12 +40,25 @@ export async function clearConfig() {
 
 export const useBwSync = () => {
   const [sync, setSync] = useState<SyncResponse | null>(null);
-  const fetchSync = useCallback(async () => {
-    const sync = await bwClient.getDecryptedSync();
+  const fetchSync = useCallback(async (forceRefresh = true) => {
+    const sync = await bwClient.getDecryptedSync({ forceRefresh });
     setSync(sync);
   }, []);
   useEffect(() => {
     fetchSync();
   }, [fetchSync]);
   return { sync, fetchSync };
+};
+
+export const emptyCipher: any = {
+  name: "",
+  type: CipherType.Login,
+  notes: null,
+  login: {
+    username: null,
+    password: null,
+    uris: [],
+  },
+  fields: [],
+  organizationId: null,
 };

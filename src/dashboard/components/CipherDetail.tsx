@@ -10,11 +10,13 @@ import { MainTab } from "./MainInfoTab.js";
 export function CipherDetail({
   selectedCipher,
   isFocused,
+  mode,
   onChange,
   onSave,
 }: {
   selectedCipher: Cipher | null | undefined;
   isFocused: boolean;
+  mode: "view" | "new";
   onChange: (cipher: Cipher) => void;
   onSave: (cipher: Cipher) => void;
 }) {
@@ -46,13 +48,15 @@ export function CipherDetail({
             />
           )}
           <Box marginTop={1}>
-            <Button
-              isActive={isFocused}
-              width="50%"
-              onClick={() => setIsMoreInfoTab(!isMoreInfoTab)}
-            >
-              More
-            </Button>
+            {mode !== "new" && (
+              <Button
+                isActive={isFocused}
+                width="50%"
+                onClick={() => setIsMoreInfoTab(!isMoreInfoTab)}
+              >
+                More
+              </Button>
+            )}
             <Button
               width="50%"
               isActive={isFocused}

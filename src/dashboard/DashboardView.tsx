@@ -5,7 +5,7 @@ import { VaultList } from "./components/VaultList.js";
 import { CipherDetail } from "./components/CipherDetail.js";
 import { HelpBar } from "./components/HelpBar.js";
 import { primary } from "../theme/style.js";
-import { bwClient, clearConfig, useBwSync } from "../hooks/bw.js";
+import { bwClient, clearConfig, emptyCipher, useBwSync } from "../hooks/bw.js";
 import { Cipher, SyncResponse } from "mcbw";
 import { useStatusMessage } from "../hooks/status-message.js";
 
@@ -17,7 +17,7 @@ type FocusableComponent = "list" | "search" | "detail";
 type DetailViewMode = "view" | "new";
 
 export function DashboardView({ onLogout }: Props) {
-  const { sync } = useBwSync();
+  const { sync, fetchSync } = useBwSync();
   const [syncState, setSyncState] = useState<SyncResponse | null>(sync);
   const [searchQuery, setSearchQuery] = useState("");
   const [listIndex, setListIndex] = useState(0);
@@ -88,7 +88,7 @@ export function DashboardView({ onLogout }: Props) {
       }
       if (input === "n") {
         setDetailMode("new");
-        setEditedCipher({} as any);
+        setEditedCipher(emptyCipher);
         setFocusedComponent("detail");
       }
     }
@@ -139,6 +139,7 @@ export function DashboardView({ onLogout }: Props) {
 
         <CipherDetail
           selectedCipher={selectedCipher}
+          mode={detailMode}
           isFocused={focusedComponent === "detail"}
           onChange={(cipher) => {
             if (detailMode === "new") {
@@ -152,11 +153,25 @@ export function DashboardView({ onLogout }: Props) {
           }}
           onSave={async (cipher) => {
             showStatusMessage("Saving...");
-            try {
-              await bwClient.updateSecret(cipher.id, cipher);
-              showStatusMessage("Saved!", "success");
-            } catch (e) {
-              showStatusMessage("Synchronization error", "error");
+            if (detailMode === "new") {
+              try {
+                await bwClient.createSecret(cipher);
+                fetchSync();
+                showStatusMessage("Saved!", "success");
+                setDetailMode("view");
+                setFocusedComponent("list");
+              } catch (e) {
+                showStatusMessage("Synchronization error", "error");
+              }
+            } else {
+              try {
+                await bwClient.updateSecret(cipher.id, cipher);
+                fetchSync();
+                showStatusMessage("Saved!", "success");
+                setFocusedComponent("list");
+              } catch (e) {
+                showStatusMessage("Synchronization error", "error");
+              }
             }
           }}
         />
