@@ -5,7 +5,7 @@ import { VaultList } from "./VaultList.js";
 import { CipherDetail } from "./CipherDetail.js";
 import { HelpBar } from "./HelpBar.js";
 import { primary } from "../theme/style.js";
-import { clearConfig, useBwSync } from "../hooks/bw.js";
+import { bwClient, clearConfig, useBwSync } from "../hooks/bw.js";
 import { Cipher, SyncResponse } from "mcbw";
 import { useStatusMessage } from "../hooks/status-message.js";
 
@@ -90,9 +90,6 @@ export function DashboardView({ onLogout }: Props) {
     }
 
     if (focusedComponent === "list") {
-      if (key.upArrow) setListIndex((prev) => Math.max(0, prev - 1));
-      if (key.downArrow)
-        setListIndex((prev) => Math.min(filteredCiphers.length - 1, prev + 1));
       if (key.return || key.tab) setFocusedComponent("detail");
       if (input === "n") {
         setDetailMode("new");
@@ -159,11 +156,28 @@ export function DashboardView({ onLogout }: Props) {
             );
             setSyncState((prev) => ({ ...prev!, ciphers: updatedCiphers! }));
           }}
-          onSave={(cipher) => {
+          onSave={async (cipher) => {
             showStatusMessage("Saving...");
-            setTimeout(() => {
-              showStatusMessage("Saved!", "success");
-            }, 1000);
+            try {
+              const original = bwClient.syncCache?.ciphers.find(
+                (c) => c.id === cipher.id
+              );
+              const decrypted = bwClient.decryptedSyncCache?.ciphers.find(
+                (c) => c.id === cipher.id
+              );
+              if (!original || !decrypted) {
+                throw new Error("Original cipher not found");
+              }
+              const patch = deepDiff(decrypted, cipher);
+              if (patch) {
+                await bwClient.updateSecret(original, patch);
+                showStatusMessage("Saved!", "success");
+              } else {
+                showStatusMessage("Nothing to save");
+              }
+            } catch (e) {
+              showStatusMessage("Synchronization error", "error");
+            }
           }}
         />
       </Box>
@@ -172,3 +186,32 @@ export function DashboardView({ onLogout }: Props) {
     </Box>
   );
 }
+
+const deepDiff = (obj1: any, obj2: any): any => {
+  if (
+    typeof obj1 !== "object" ||
+    obj1 === null ||
+    typeof obj2 !== "object" ||
+    obj2 === null
+  ) {
+    return obj1 !== obj2 ? obj2 : undefined;
+  }
+
+  let diff: any = Array.isArray(obj2) ? [] : {};
+
+  let changed = false;
+  for (const key in obj2) {
+    if (!(key in obj1)) {
+      diff[key] = obj2[key];
+      changed = true;
+    } else {
+      const subDiff = deepDiff(obj1[key], obj2[key]);
+      if (subDiff !== undefined) {
+        diff[key] = subDiff;
+        changed = true;
+      }
+    }
+  }
+
+  return changed ? diff : undefined;
+};
