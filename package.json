@@ -19,7 +19,7 @@
     "chalk": "^5.6.2",
     "clipboardy": "^4.0.0",
     "ink": "^6.3.0",
-    "mcbw": "link:../mcbw/node",
+    "mcbw": "github:mceck/mcbw",
     "react": "^19.1.0"
   },
   "devDependencies": {
