@@ -98,6 +98,9 @@ export const TextInput = ({
         chalk.inverse(atCursor) +
         (afterCursor ? afterCursor : "");
     }
+    if (!displayValue.length) {
+      displayValue = " ";
+    }
     return displayValue;
   }, [value, cursor, isFocused]);
 

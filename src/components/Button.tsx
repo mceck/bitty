@@ -5,9 +5,9 @@ import { primary } from "../theme/style.js";
 type Props = {
   onClick: () => void;
   children: ReactNode;
-};
+} & React.ComponentProps<typeof Box>;
 
-export const Button = ({ onClick, children }: Props) => {
+export const Button = ({ onClick, children, ...props }: Props) => {
   const { isFocused } = useFocus();
 
   useInput((input, key) => {
@@ -24,6 +24,7 @@ export const Button = ({ onClick, children }: Props) => {
       borderColor={isFocused ? primary : "gray"}
       alignItems="center"
       justifyContent="center"
+      {...props}
     >
       <Text color={isFocused ? "white" : "gray"}>{children}</Text>
     </Box>

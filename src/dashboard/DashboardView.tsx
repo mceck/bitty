@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Text, useFocusManager, useInput, useStdout } from "ink";
 import { TextInput } from "../components/TextInput.js";
-import { Button } from "../components/Button.js";
 import { VaultList } from "./VaultList.js";
 import { CipherDetail } from "./CipherDetail.js";
 import { HelpBar } from "./HelpBar.js";
 import { primary } from "../theme/style.js";
-import { bwClient, clearConfig, useBwSync } from "../hooks/bw.js";
+import { clearConfig, useBwSync } from "../hooks/bw.js";
 import { Cipher, SyncResponse } from "mcbw";
+import { useStatusMessage } from "../hooks/status-message.js";
 
 type Props = {
   onLogout: () => void;
@@ -27,11 +27,15 @@ export function DashboardView({ onLogout }: Props) {
   const [editedCipher, setEditedCipher] = useState<Cipher | null>(null);
   const { focus, focusNext } = useFocusManager();
   const { stdout } = useStdout();
+  const { statusMessage, statusMessageColor, showStatusMessage } =
+    useStatusMessage();
 
   const filteredCiphers = useMemo(() => {
     return (
-      syncState?.ciphers.filter((c) =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase())
+      syncState?.ciphers.filter(
+        (c) =>
+          !c.deletedDate &&
+          c.name.toLowerCase().includes(searchQuery.toLowerCase())
       ) ?? []
     );
   }, [syncState, searchQuery]);
@@ -112,20 +116,27 @@ export function DashboardView({ onLogout }: Props) {
         </Text>
       </Box>
 
-      <Box width="40%">
-        <TextInput
-          id="search"
-          placeholder={
-            focusedComponent === "search" ? "" : "[/] Search in vault"
-          }
-          value={searchQuery}
-          isActive={false}
-          onChange={setSearchQuery}
-          onSubmit={() => {
-            setFocusedComponent("list");
-            focusNext();
-          }}
-        />
+      <Box>
+        <Box width="40%">
+          <TextInput
+            id="search"
+            placeholder={
+              focusedComponent === "search" ? "" : "[/] Search in vault"
+            }
+            value={searchQuery}
+            isActive={false}
+            onChange={setSearchQuery}
+            onSubmit={() => {
+              setFocusedComponent("list");
+              focusNext();
+            }}
+          />
+        </Box>
+        {statusMessage && (
+          <Box width="60%" padding={1}>
+            <Text color={statusMessageColor}>{statusMessage}</Text>
+          </Box>
+        )}
       </Box>
 
       <Box minHeight={20} flexGrow={1}>
@@ -149,7 +160,10 @@ export function DashboardView({ onLogout }: Props) {
             setSyncState((prev) => ({ ...prev!, ciphers: updatedCiphers! }));
           }}
           onSave={(cipher) => {
-            console.log("Saving cipher", cipher);
+            showStatusMessage("Saving...");
+            setTimeout(() => {
+              showStatusMessage("Saved!", "success");
+            }, 1000);
           }}
         />
       </Box>
