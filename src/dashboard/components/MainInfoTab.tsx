@@ -127,6 +127,7 @@ export function MainTab({
             maxLines={noteH - 2}
             isActive={isFocused}
             value={selectedCipher.notes ?? ""}
+            onSubmit={focusNext}
             onChange={(value) =>
               onChange({
                 ...selectedCipher,

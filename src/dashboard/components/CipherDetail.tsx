@@ -47,12 +47,17 @@ export function CipherDetail({
           )}
           <Box marginTop={1}>
             <Button
+              isActive={isFocused}
               width="50%"
               onClick={() => setIsMoreInfoTab(!isMoreInfoTab)}
             >
               More
             </Button>
-            <Button width="50%" onClick={() => onSave(selectedCipher!)}>
+            <Button
+              width="50%"
+              isActive={isFocused}
+              onClick={() => onSave(selectedCipher!)}
+            >
               Save
             </Button>
           </Box>

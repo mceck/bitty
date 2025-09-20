@@ -69,34 +69,28 @@ export function DashboardView({ onLogout }: Props) {
     }
 
     if (key.escape) {
-      if (focusedComponent === "search" && searchQuery?.length) {
-        setSearchQuery("");
-      } else {
-        setFocusedComponent("list");
-      }
-      setDetailMode("view");
-      return;
-    }
-
-    if (key.tab && focusedComponent === "search") {
       setFocusedComponent("list");
-      focus("list");
-      return;
+      setDetailMode("view");
     }
 
-    if (key.rightArrow && focusedComponent === "list" && selectedCipher) {
-      setFocusedComponent("detail");
-      return;
-    }
-
-    if (focusedComponent === "list") {
-      if (key.return || key.tab) setFocusedComponent("detail");
+    if (focusedComponent === "search") {
+      if (key.escape && searchQuery?.length) {
+        setSearchQuery("");
+      } else if (key.tab) {
+        setFocusedComponent("list");
+        focus("list");
+        return;
+      }
+    } else if (focusedComponent === "list") {
+      if (key.return || key.tab) {
+        setFocusedComponent("detail");
+        focusNext();
+      }
       if (input === "n") {
         setDetailMode("new");
         setEditedCipher({} as any);
         setFocusedComponent("detail");
       }
-    } else if (focusedComponent === "detail") {
     }
   });
 

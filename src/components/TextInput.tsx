@@ -195,18 +195,17 @@ export const TextInput = ({
         setCursor(value.length);
       }
     } else if (key.return) {
-      if (multiline) {
-        const newValue = value.slice(0, cursor) + "\n" + value.slice(cursor);
-        const newCursor = cursor + 1;
+      if (multiline && cursor > 0 && value[cursor - 1] === "\\") {
+        const newValue =
+          value.slice(0, cursor - 1) + "\n" + value.slice(cursor);
         const newCurrentLine =
-          newValue.substring(0, newCursor).split("\n").length - 1;
+          newValue.substring(0, cursor).split("\n").length - 1;
 
         if (newCurrentLine >= scrollOffset + maxLines) {
           setScrollOffset(newCurrentLine - maxLines + 1);
         }
 
         onChange?.(newValue);
-        setCursor(newCursor);
       } else {
         onSubmit?.();
       }

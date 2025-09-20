@@ -3,15 +3,16 @@ import { ReactNode } from "react";
 import { primary } from "../theme/style.js";
 
 type Props = {
+  isActive?: boolean;
   onClick: () => void;
   children: ReactNode;
 } & React.ComponentProps<typeof Box>;
 
-export const Button = ({ onClick, children, ...props }: Props) => {
+export const Button = ({ isActive, onClick, children, ...props }: Props) => {
   const { isFocused } = useFocus();
 
   useInput((input, key) => {
-    if (!isFocused) return;
+    if (!isFocused || !isActive) return;
 
     if (key.return) {
       onClick();
@@ -21,12 +22,12 @@ export const Button = ({ onClick, children, ...props }: Props) => {
   return (
     <Box
       borderStyle="round"
-      borderColor={isFocused ? primary : "gray"}
+      borderColor={isFocused && isActive ? primary : "gray"}
       alignItems="center"
       justifyContent="center"
       {...props}
     >
-      <Text color={isFocused ? "white" : "gray"}>{children}</Text>
+      <Text color={isFocused && isActive ? "white" : "gray"}>{children}</Text>
     </Box>
   );
 };

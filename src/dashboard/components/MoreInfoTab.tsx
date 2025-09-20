@@ -75,7 +75,7 @@ export function MoreInfoTab({
             <Box flexDirection="row" key={idx} paddingLeft={2}>
               <Box width={16} marginRight={2}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
-                  {field.name}:
+                  {field.name || idx}:
                 </Text>
               </Box>
               <Box flexGrow={1} paddingLeft={1}>
