@@ -8,7 +8,12 @@ type Props = {
   children: ReactNode;
 } & React.ComponentProps<typeof Box>;
 
-export const Button = ({ isActive, onClick, children, ...props }: Props) => {
+export const Button = ({
+  isActive = true,
+  onClick,
+  children,
+  ...props
+}: Props) => {
   const { isFocused } = useFocus();
 
   useInput((input, key) => {

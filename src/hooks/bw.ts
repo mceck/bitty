@@ -1,13 +1,13 @@
 import os from "os";
 import fs from "fs";
 import path from "path";
-import { Client, SyncResponse, CipherType } from "mcbw";
+import { Client, SyncResponse, CipherType, BwKeys } from "mcbw";
 import { useCallback, useEffect, useState } from "react";
 
 interface BwConfig {
   baseUrl?: string;
-  username?: string;
-  password?: string;
+  keys: BwKeys;
+  refreshToken: string;
 }
 
 export const bwClient = new Client();
@@ -16,20 +16,66 @@ const configPath = path.join(os.homedir(), ".config", "bwtui", "config.json");
 export async function loadConfig() {
   if (fs.existsSync(configPath)) {
     const content = await fs.promises.readFile(configPath, "utf-8");
-    const config = JSON.parse(content);
+    const config = JSON.parse(Buffer.from(content, "base64").toString("utf-8"));
     if (config.baseUrl) {
       await bwClient.setUrls({ baseUrl: config.baseUrl });
     }
-    if (config.username && config.password) {
-      await bwClient.login(config.username, config.password);
+    if (config.keys && config.refreshToken) {
+      const keys: any = {};
+      if (config.keys.masterKey)
+        keys.masterKey = Uint8Array.from(config.keys.masterKey);
+      if (config.keys.masterPasswordHash)
+        keys.masterPasswordHash = config.keys.masterPasswordHash;
+      if (config.keys.privateKey)
+        keys.privateKey = {
+          key: Uint8Array.from(config.keys.privateKey.key),
+          mac: Uint8Array.from(config.keys.privateKey.mac),
+        };
+      if (config.keys.encryptionKey)
+        keys.encryptionKey = {
+          key: Uint8Array.from(config.keys.encryptionKey.key),
+          mac: Uint8Array.from(config.keys.encryptionKey.mac),
+        };
+      if (config.keys.userKey)
+        keys.userKey = {
+          key: Uint8Array.from(config.keys.userKey.key),
+          mac: Uint8Array.from(config.keys.userKey.mac),
+        };
+      bwClient.keys = keys;
+      bwClient.refreshToken = config.refreshToken;
       return true;
     }
   }
   return false;
 }
 export async function saveConfig(config: BwConfig) {
+  const keys: any = {};
+  if (config.keys.masterKey) keys.masterKey = Array.from(config.keys.masterKey);
+  if (config.keys.masterPasswordHash)
+    keys.masterPasswordHash = config.keys.masterPasswordHash;
+  if (config.keys.privateKey)
+    keys.privateKey = {
+      key: Array.from(config.keys.privateKey.key),
+      mac: Array.from(config.keys.privateKey.mac),
+    };
+  if (config.keys.encryptionKey)
+    keys.encryptionKey = {
+      key: Array.from(config.keys.encryptionKey.key),
+      mac: Array.from(config.keys.encryptionKey.mac),
+    };
+  if (config.keys.userKey)
+    keys.userKey = {
+      key: Array.from(config.keys.userKey.key),
+      mac: Array.from(config.keys.userKey.mac),
+    };
+  const encConfig = Buffer.from(
+    JSON.stringify({
+      ...config,
+      keys,
+    })
+  ).toString("base64");
   await fs.promises.mkdir(path.dirname(configPath), { recursive: true });
-  await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+  await fs.promises.writeFile(configPath, encConfig);
 }
 
 export async function clearConfig() {

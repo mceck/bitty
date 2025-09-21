@@ -103,7 +103,7 @@ export function DashboardView({ onLogout }: Props) {
         justifyContent="center"
       >
         <Text bold color={primary}>
-          Bitwarden TUI
+          BiTTY
         </Text>
       </Box>
 

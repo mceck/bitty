@@ -4,20 +4,21 @@ import { TextInput } from "../components/TextInput.js";
 import { Button } from "../components/Button.js";
 import { primary } from "../theme/style.js";
 import { bwClient, loadConfig, saveConfig } from "../hooks/bw.js";
+import { useStatusMessage } from "../hooks/status-message.js";
 
 type Props = {
   onLogin: () => void;
 };
 
 const art = `
- ███████████  █████   ███   █████            ███████████ █████  █████ █████
-░░███░░░░░███░░███   ░███  ░░███            ░█░░░███░░░█░░███  ░░███ ░░███
- ░███    ░███ ░███   ░███   ░███            ░   ░███  ░  ░███   ░███  ░███
- ░██████████  ░███   ░███   ░███  ██████████    ░███     ░███   ░███  ░███
- ░███░░░░░███ ░░███  █████  ███  ░░░░░░░░░░     ░███     ░███   ░███  ░███
- ░███    ░███  ░░░█████░█████░                  ░███     ░███   ░███  ░███
- ███████████     ░░███ ░░███                    █████    ░░████████   █████
-░░░░░░░░░░░       ░░░   ░░░                    ░░░░░      ░░░░░░░░   ░░░░░
+ ███████████   ███  ███████████ ███████████ █████ █████
+░░███░░░░░███ ░░░  ░█░░░███░░░█░█░░░███░░░█░░███ ░░███
+ ░███    ░███ ████ ░   ░███  ░ ░   ░███  ░  ░░███ ███
+ ░██████████ ░░███     ░███        ░███      ░░█████
+ ░███░░░░░███ ░███     ░███        ░███       ░░███
+ ░███    ░███ ░███     ░███        ░███        ░███
+ ███████████  █████    █████       █████       █████
+░░░░░░░░░░░  ░░░░░    ░░░░░       ░░░░░       ░░░░░
 `;
 
 export function LoginView({ onLogin }: Props) {
@@ -26,31 +27,49 @@ export function LoginView({ onLogin }: Props) {
   const [password, setPassword] = useState("");
   const { stdout } = useStdout();
   const { focusNext } = useFocusManager();
+  const { statusMessage, statusMessageColor, showStatusMessage } =
+    useStatusMessage();
 
   const handleLogin = async () => {
-    if (!email?.length || !password?.length) {
-      focusNext();
-      return;
-    }
-    if (url?.trim().length) {
-      bwClient.setUrls({ baseUrl: url });
-    }
-    await bwClient.login(email, password);
+    try {
+      if (!email?.length || !password?.length) {
+        focusNext();
+        showStatusMessage("Please provide both email and password.", "error");
+        return;
+      }
+      if (url?.trim().length) {
+        bwClient.setUrls({ baseUrl: url });
+      }
+      await bwClient.login(email, password);
 
-    onLogin();
-    saveConfig({
-      baseUrl: url?.trim().length ? url : undefined,
-      username: email,
-      password: password,
-    });
+      if (!bwClient.refreshToken || !bwClient.keys)
+        throw new Error("Missing URL or keys after login");
+
+      onLogin();
+      saveConfig({
+        baseUrl: url?.trim().length ? url.trim() : undefined,
+        keys: bwClient.keys,
+        refreshToken: bwClient.refreshToken,
+      });
+    } catch (e) {
+      showStatusMessage(
+        "Login failed, please check your credentials.",
+        "error"
+      );
+    }
   };
 
   useEffect(() => {
-    loadConfig().then((loggedIn) => {
-      if (loggedIn) {
-        onLogin();
+    (async () => {
+      try {
+        const loggedIn = await loadConfig();
+        if (loggedIn) {
+          onLogin();
+        }
+      } catch (e) {
+        showStatusMessage("Failed to load config file", "error");
       }
-    });
+    })();
   }, []);
 
   return (
@@ -92,6 +111,11 @@ export function LoginView({ onLogin }: Props) {
           isPassword
         />
         <Button onClick={handleLogin}>Log In</Button>
+        {statusMessage && (
+          <Box marginTop={1} width="100%" justifyContent="center">
+            <Text color={statusMessageColor}>{statusMessage}</Text>
+          </Box>
+        )}
       </Box>
     </Box>
   );
