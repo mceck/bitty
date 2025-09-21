@@ -2,13 +2,17 @@
   "name": "bitty",
   "version": "0.0.0",
   "license": "MIT",
-  "bin": "dist/cli.js",
+  "bin": {
+    "bitty": "dist/cli.js"
+  },
   "type": "module",
   "engines": {
     "node": ">=16"
   },
   "scripts": {
     "build": "tsc",
+    "postinstall": "tsc",
+    "prepublishOnly": "tsc",
     "watch": "tsc --watch",
     "dev": "tsc && node dist/cli.js"
   },
