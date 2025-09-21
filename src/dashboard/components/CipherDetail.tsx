@@ -59,6 +59,7 @@ export function CipherDetail({
             )}
             <Button
               width="50%"
+              doubleConfirm
               isActive={isFocused}
               onClick={() => onSave(selectedCipher!)}
             >

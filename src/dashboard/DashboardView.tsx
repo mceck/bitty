@@ -165,7 +165,11 @@ export function DashboardView({ onLogout }: Props) {
               }
             } else {
               try {
-                await bwClient.updateSecret(cipher.id, cipher);
+                const updated = await bwClient.updateSecret(cipher.id, cipher);
+                if (!updated) {
+                  showStatusMessage("Nothing to save");
+                  return;
+                }
                 fetchSync();
                 showStatusMessage("Saved!", "success");
                 setFocusedComponent("list");
