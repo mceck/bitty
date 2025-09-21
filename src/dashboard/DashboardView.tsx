@@ -110,7 +110,7 @@ export function DashboardView({ onLogout }: Props) {
   }, [showDetails]);
 
   return (
-    <Box flexDirection="column" width="100%" height={stdout.rows - 2}>
+    <Box flexDirection="column" width="100%" height={stdout.rows - 1}>
       <Box
         borderStyle="double"
         borderColor={primary}
