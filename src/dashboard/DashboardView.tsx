@@ -33,13 +33,19 @@ export function DashboardView({ onLogout }: Props) {
 
   const filteredCiphers = useMemo(() => {
     return (
-      syncState?.ciphers.filter(
-        (c) =>
-          !c.deletedDate &&
-          (!searchQuery.length ||
-            c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      ) ?? []
-    );
+      syncState?.ciphers.filter((c) => {
+        if (c.deletedDate) return false;
+        if (!searchQuery?.length) return true;
+        const search = searchQuery.toLowerCase();
+        return (
+          c.name.toLowerCase().includes(search) ||
+          c.id.toLowerCase().includes(search) ||
+          c.notes?.toLowerCase().includes(search) ||
+          c.login?.uri?.toLowerCase().includes(search) ||
+          c.login?.username?.toLowerCase().includes(search)
+        );
+      }) ?? []
+    ).sort((a, b) => a.name.localeCompare(b.name));
   }, [syncState, searchQuery]);
 
   const selectedCipher =
