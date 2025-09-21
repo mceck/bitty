@@ -49,7 +49,7 @@ export function CipherDetail({
           <Box marginTop={1} flexShrink={0} gap={1}>
             {mode !== "new" && (
               <Button
-                flexGrow={1}
+                width="50%"
                 isActive={isFocused}
                 onClick={() => setIsMoreInfoTab(!isMoreInfoTab)}
               >
@@ -59,7 +59,7 @@ export function CipherDetail({
             {selectedCipher.type !== CipherType.SSHKey && (
               <Button
                 doubleConfirm
-                flexGrow={1}
+                width="50%"
                 isActive={isFocused}
                 onClick={() => onSave(selectedCipher!)}
               >

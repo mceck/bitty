@@ -116,6 +116,7 @@ export function DashboardView({ onLogout }: Props) {
         borderColor={primary}
         paddingX={2}
         justifyContent="center"
+        flexShrink={0}
       >
         <Text bold color={primary}>
           BiTTY

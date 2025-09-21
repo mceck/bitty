@@ -7,6 +7,7 @@ export function HelpBar({ focus }: { focus: "list" | "search" | "detail" }) {
       borderColor="gray"
       marginTop={1}
       paddingX={1}
+      flexShrink={0}
       justifyContent="space-around"
     >
       <Text color="gray">
