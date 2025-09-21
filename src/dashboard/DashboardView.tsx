@@ -95,7 +95,7 @@ export function DashboardView({ onLogout }: Props) {
   });
 
   return (
-    <Box flexDirection="column" width="100%" minHeight={stdout.rows - 2}>
+    <Box flexDirection="column" width="100%" height={stdout.rows - 2}>
       <Box
         borderStyle="double"
         borderColor={primary}
@@ -134,6 +134,7 @@ export function DashboardView({ onLogout }: Props) {
         <VaultList
           filteredCiphers={filteredCiphers}
           isFocused={focusedComponent === "list"}
+          selected={listIndex}
           onSelect={(index) => setListIndex(index)}
         />
 

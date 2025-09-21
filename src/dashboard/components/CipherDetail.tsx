@@ -47,7 +47,7 @@ export function CipherDetail({
               onChange={onChange}
             />
           )}
-          <Box marginTop={1}>
+          <Box marginTop={1} flexShrink={0}>
             {mode !== "new" && (
               <Button
                 isActive={isFocused}

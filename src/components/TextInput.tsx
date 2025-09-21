@@ -19,7 +19,7 @@ type Props = {
   inline?: boolean;
   multiline?: boolean;
   maxLines?: number;
-};
+} & React.ComponentProps<typeof Box>;
 
 export const TextInput = ({
   id,
@@ -35,6 +35,7 @@ export const TextInput = ({
   onChange,
   onSubmit,
   onCopy,
+  ...props
 }: Props) => {
   const [cursor, setCursor] = useState(value.length);
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -234,8 +235,11 @@ export const TextInput = ({
       borderLeft={!inline}
       borderRight={!inline}
       flexGrow={1}
+      flexShrink={0}
       paddingX={inline ? 0 : 1}
       overflow="hidden"
+      minHeight={inline ? 1 : 3}
+      {...props}
     >
       <Text color={value ? "white" : "gray"}>{displayValue}</Text>
     </Box>

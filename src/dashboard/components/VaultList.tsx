@@ -21,10 +21,12 @@ const getTypeIcon = (type: CipherType) => {
 export function VaultList({
   filteredCiphers,
   isFocused,
+  selected,
   onSelect,
 }: {
   filteredCiphers: Cipher[];
   isFocused: boolean;
+  selected: number | null;
   onSelect: (index: number) => void;
 }) {
   const { stdout } = useStdout();
@@ -42,6 +44,7 @@ export function VaultList({
         isActive={isFocused}
         count={stdout.rows - 14}
         list={filteredCiphers}
+        selectedIndex={selected ?? 0}
         onSelect={onSelect}
       >
         {({ el: cipher, selected }) => (
@@ -54,7 +57,10 @@ export function VaultList({
           >
             <Box>
               <Text>{getTypeIcon(cipher.type)} </Text>
-              <Text color={selected && isFocused ? "white" : "default"}>
+              <Text
+                color={selected && isFocused ? "white" : "default"}
+                wrap="truncate"
+              >
                 {cipher.name}
               </Text>
             </Box>
