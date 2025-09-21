@@ -19,7 +19,7 @@ importers:
         version: 6.3.0(@types/react@19.1.13)(react@19.1.1)
       mcbw:
         specifier: github:mceck/mcbw
-        version: git+https://git@github.com:mceck/mcbw.git#5db3558c16b5d3f87fc45614fae75fb0ada8ac4b
+        version: git+https://git@github.com:mceck/mcbw.git#85736b010d6567b4e17f8cc52ab304afdf241d66
       react:
         specifier: ^19.1.0
         version: 19.1.1
@@ -743,8 +743,8 @@ packages:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
 
-  mcbw@git+https://git@github.com:mceck/mcbw.git#5db3558c16b5d3f87fc45614fae75fb0ada8ac4b:
-    resolution: {commit: 5db3558c16b5d3f87fc45614fae75fb0ada8ac4b, repo: git@github.com:mceck/mcbw.git, type: git}
+  mcbw@git+https://git@github.com:mceck/mcbw.git#85736b010d6567b4e17f8cc52ab304afdf241d66:
+    resolution: {commit: 85736b010d6567b4e17f8cc52ab304afdf241d66, repo: git@github.com:mceck/mcbw.git, type: git}
     version: 1.0.0
 
   merge-stream@2.0.0:
@@ -1951,7 +1951,7 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mcbw@git+https://git@github.com:mceck/mcbw.git#5db3558c16b5d3f87fc45614fae75fb0ada8ac4b: {}
+  mcbw@git+https://git@github.com:mceck/mcbw.git#85736b010d6567b4e17f8cc52ab304afdf241d66: {}
 
   merge-stream@2.0.0: {}
 

@@ -14,37 +14,46 @@ export const bwClient = new Client();
 const configPath = path.join(os.homedir(), ".config", "bwtui", "config.json");
 
 export async function loadConfig() {
-  if (fs.existsSync(configPath)) {
-    const content = await fs.promises.readFile(configPath, "utf-8");
-    const config = JSON.parse(Buffer.from(content, "base64").toString("utf-8"));
-    if (config.baseUrl) {
-      await bwClient.setUrls({ baseUrl: config.baseUrl });
+  try {
+    if (fs.existsSync(configPath)) {
+      const content = await fs.promises.readFile(configPath, "utf-8");
+      const config = JSON.parse(
+        Buffer.from(content, "base64").toString("utf-8")
+      );
+      if (config.baseUrl) {
+        await bwClient.setUrls({ baseUrl: config.baseUrl });
+      }
+      if (config.keys && config.refreshToken) {
+        const keys: any = {};
+        if (config.keys.masterKey)
+          keys.masterKey = Uint8Array.from(config.keys.masterKey);
+        if (config.keys.masterPasswordHash)
+          keys.masterPasswordHash = config.keys.masterPasswordHash;
+        if (config.keys.privateKey)
+          keys.privateKey = {
+            key: Uint8Array.from(config.keys.privateKey.key),
+            mac: Uint8Array.from(config.keys.privateKey.mac),
+          };
+        if (config.keys.encryptionKey)
+          keys.encryptionKey = {
+            key: Uint8Array.from(config.keys.encryptionKey.key),
+            mac: Uint8Array.from(config.keys.encryptionKey.mac),
+          };
+        if (config.keys.userKey)
+          keys.userKey = {
+            key: Uint8Array.from(config.keys.userKey.key),
+            mac: Uint8Array.from(config.keys.userKey.mac),
+          };
+        bwClient.keys = keys;
+        bwClient.refreshToken = config.refreshToken;
+        await bwClient.checkToken();
+        return true;
+      }
     }
-    if (config.keys && config.refreshToken) {
-      const keys: any = {};
-      if (config.keys.masterKey)
-        keys.masterKey = Uint8Array.from(config.keys.masterKey);
-      if (config.keys.masterPasswordHash)
-        keys.masterPasswordHash = config.keys.masterPasswordHash;
-      if (config.keys.privateKey)
-        keys.privateKey = {
-          key: Uint8Array.from(config.keys.privateKey.key),
-          mac: Uint8Array.from(config.keys.privateKey.mac),
-        };
-      if (config.keys.encryptionKey)
-        keys.encryptionKey = {
-          key: Uint8Array.from(config.keys.encryptionKey.key),
-          mac: Uint8Array.from(config.keys.encryptionKey.mac),
-        };
-      if (config.keys.userKey)
-        keys.userKey = {
-          key: Uint8Array.from(config.keys.userKey.key),
-          mac: Uint8Array.from(config.keys.userKey.mac),
-        };
-      bwClient.keys = keys;
-      bwClient.refreshToken = config.refreshToken;
-      return true;
-    }
+  } catch (e) {
+    bwClient.keys = {};
+    bwClient.refreshToken = null;
+    bwClient.token = null;
   }
   return false;
 }

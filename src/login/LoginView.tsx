@@ -22,6 +22,7 @@ const art = `
 `;
 
 export function LoginView({ onLogin }: Props) {
+  const [loading, setLoading] = useState(true);
   const [url, setUrl] = useState("https://vault.bitwarden.eu");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,6 +69,8 @@ export function LoginView({ onLogin }: Props) {
         }
       } catch (e) {
         showStatusMessage("Failed to load config file", "error");
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
@@ -83,34 +86,38 @@ export function LoginView({ onLogin }: Props) {
       <Box marginBottom={2}>
         <Text color={primary}>{art}</Text>
       </Box>
-      <Box flexDirection="column" width="50%">
-        <TextInput placeholder="Server URL" value={url} onChange={setUrl} />
-        <TextInput
-          autoFocus
-          placeholder="Email address"
-          value={email}
-          onChange={setEmail}
-        />
-        <TextInput
-          placeholder="Master password"
-          value={password}
-          onChange={setPassword}
-          onSubmit={() => {
-            if (email?.length && password?.length) {
-              handleLogin();
-            } else {
-              focusNext();
-            }
-          }}
-          isPassword
-        />
-        <Button onClick={handleLogin}>Log In</Button>
-        {statusMessage && (
-          <Box marginTop={1} width="100%" justifyContent="center">
-            <Text color={statusMessageColor}>{statusMessage}</Text>
-          </Box>
-        )}
-      </Box>
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : (
+        <Box flexDirection="column" width="50%">
+          <TextInput placeholder="Server URL" value={url} onChange={setUrl} />
+          <TextInput
+            autoFocus
+            placeholder="Email address"
+            value={email}
+            onChange={setEmail}
+          />
+          <TextInput
+            placeholder="Master password"
+            value={password}
+            onChange={setPassword}
+            onSubmit={() => {
+              if (email?.length && password?.length) {
+                handleLogin();
+              } else {
+                focusNext();
+              }
+            }}
+            isPassword
+          />
+          <Button onClick={handleLogin}>Log In</Button>
+          {statusMessage && (
+            <Box marginTop={1} width="100%" justifyContent="center">
+              <Text color={statusMessageColor}>{statusMessage}</Text>
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
