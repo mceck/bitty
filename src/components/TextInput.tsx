@@ -37,7 +37,7 @@ export const TextInput = ({
   onCopy,
   ...props
 }: Props) => {
-  const [cursor, setCursor] = useState(value.length);
+  const [cursor, setCursor] = useState(onChange ? value.length : 0);
   const [scrollOffset, setScrollOffset] = useState(0);
   const { isFocused } = useFocus({ id, isActive, autoFocus });
   const { showStatusMessage } = useStatusMessage();

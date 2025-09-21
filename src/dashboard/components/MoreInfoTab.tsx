@@ -1,5 +1,5 @@
 import { Box, Text, useFocusManager, useStdout } from "ink";
-import { Cipher } from "mcbw";
+import { Cipher, CipherType } from "mcbw";
 import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
 
@@ -22,7 +22,11 @@ export function MoreInfoTab({
           </Text>
         </Box>
         <Box flexGrow={1} paddingLeft={1}>
-          <Text>{selectedCipher.id ?? ""}</Text>
+          <TextInput
+            inline
+            isActive={isFocused}
+            value={selectedCipher.id ?? ""}
+          />
         </Box>
       </Box>
       {!!selectedCipher.organizationId && (
@@ -33,7 +37,11 @@ export function MoreInfoTab({
             </Text>
           </Box>
           <Box flexGrow={1} paddingLeft={1}>
-            <Text>{selectedCipher.organizationId ?? ""}</Text>
+            <TextInput
+              inline
+              isActive={isFocused}
+              value={selectedCipher.organizationId ?? ""}
+            />
           </Box>
         </Box>
       )}
@@ -47,7 +55,7 @@ export function MoreInfoTab({
           <Box flexGrow={1} paddingLeft={1}>
             <Box flexDirection="column">
               {selectedCipher.collectionIds?.map((id) => (
-                <Text key={id}>{id}</Text>
+                <TextInput key={id} inline isActive={isFocused} value={id} />
               )) || <Text>-</Text>}
             </Box>
           </Box>
@@ -61,7 +69,27 @@ export function MoreInfoTab({
             </Text>
           </Box>
           <Box flexGrow={1} paddingLeft={1}>
-            <Text>{selectedCipher.folderId}</Text>
+            <TextInput
+              inline
+              isActive={isFocused}
+              value={selectedCipher.folderId ?? ""}
+            />
+          </Box>
+        </Box>
+      )}
+      {selectedCipher.type === CipherType.SSHKey && (
+        <Box flexDirection="row">
+          <Box width={12} marginRight={2} flexShrink={0}>
+            <Text bold color={isFocused ? primaryLight : "gray"}>
+              Fingerprint:
+            </Text>
+          </Box>
+          <Box flexGrow={1} paddingLeft={1}>
+            <TextInput
+              inline
+              isActive={isFocused}
+              value={selectedCipher.sshKey?.keyFingerprint ?? ""}
+            />
           </Box>
         </Box>
       )}

@@ -36,7 +36,8 @@ export function DashboardView({ onLogout }: Props) {
       syncState?.ciphers.filter(
         (c) =>
           !c.deletedDate &&
-          c.name.toLowerCase().includes(searchQuery.toLowerCase())
+          (!searchQuery.length ||
+            c.name.toLowerCase().includes(searchQuery.toLowerCase()))
       ) ?? []
     );
   }, [syncState, searchQuery]);

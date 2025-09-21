@@ -1,6 +1,6 @@
 import { Box } from "ink";
 import { primaryLight } from "../../theme/style.js";
-import { Cipher } from "mcbw";
+import { Cipher, CipherType } from "mcbw";
 import { Button } from "../../components/Button.js";
 import { useState } from "react";
 import { MoreInfoTab } from "./MoreInfoTab.js";
@@ -56,14 +56,16 @@ export function CipherDetail({
                 More
               </Button>
             )}
-            <Button
-              doubleConfirm
-              flexGrow={1}
-              isActive={isFocused}
-              onClick={() => onSave(selectedCipher!)}
-            >
-              Save
-            </Button>
+            {selectedCipher.type !== CipherType.SSHKey && (
+              <Button
+                doubleConfirm
+                flexGrow={1}
+                isActive={isFocused}
+                onClick={() => onSave(selectedCipher!)}
+              >
+                Save
+              </Button>
+            )}
           </Box>
         </Box>
       )}
