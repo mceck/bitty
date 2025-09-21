@@ -46,19 +46,19 @@ export function CipherDetail({
               onChange={onChange}
             />
           )}
-          <Box marginTop={1} flexShrink={0}>
+          <Box marginTop={1} flexShrink={0} gap={1}>
             {mode !== "new" && (
               <Button
+                flexGrow={1}
                 isActive={isFocused}
-                width="50%"
                 onClick={() => setIsMoreInfoTab(!isMoreInfoTab)}
               >
                 More
               </Button>
             )}
             <Button
-              width="50%"
               doubleConfirm
+              flexGrow={1}
               isActive={isFocused}
               onClick={() => onSave(selectedCipher!)}
             >

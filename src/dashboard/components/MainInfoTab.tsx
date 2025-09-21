@@ -15,7 +15,7 @@ export function MainTab({
   return (
     <Box flexDirection="column" gap={1}>
       <Box flexDirection="row">
-        <Box width={15} marginRight={2} flexShrink={0}>
+        <Box width={10} marginRight={2} flexShrink={0}>
           <Text bold color={isFocused ? primaryLight : "gray"}>
             Name:
           </Text>
@@ -32,7 +32,7 @@ export function MainTab({
 
       {selectedCipher.type === CipherType.Login && (
         <Box flexDirection="row">
-          <Box width={15} marginRight={2} flexShrink={0}>
+          <Box width={10} marginRight={2} flexShrink={0}>
             <Text bold color={isFocused ? primaryLight : "gray"}>
               Username:
             </Text>
@@ -55,7 +55,7 @@ export function MainTab({
 
       {selectedCipher.type === CipherType.Login && (
         <Box flexDirection="row">
-          <Box width={15} marginRight={2} flexShrink={0}>
+          <Box width={10} marginRight={2} flexShrink={0}>
             <Text bold color={isFocused ? primaryLight : "gray"}>
               Password:
             </Text>
@@ -80,7 +80,7 @@ export function MainTab({
 
       {selectedCipher.type === CipherType.Login && (
         <Box flexDirection="row">
-          <Box width={15} marginRight={2} flexShrink={0}>
+          <Box width={10} marginRight={2} flexShrink={0}>
             <Text bold color={isFocused ? primaryLight : "gray"}>
               URL:
             </Text>
@@ -108,7 +108,7 @@ export function MainTab({
       )}
 
       <Box flexDirection="row">
-        <Box width={15} flexShrink={0} marginRight={2}>
+        <Box width={10} flexShrink={0} marginRight={2}>
           <Text bold color={isFocused ? primaryLight : "gray"}>
             Notes:
           </Text>
