@@ -1,4 +1,4 @@
-import { Box, Text, useFocusManager, useStdout } from "ink";
+import { Box, Text } from "ink";
 import { Cipher, CipherType } from "mcbw";
 import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
@@ -12,9 +12,6 @@ export function MainTab({
   selectedCipher: Cipher;
   onChange: (cipher: Cipher) => void;
 }) {
-  const { stdout } = useStdout();
-  let noteH = stdout.rows - 26;
-  if (selectedCipher.type !== CipherType.Login) noteH += 6;
   return (
     <Box flexDirection="column" gap={1}>
       <Box flexDirection="row">

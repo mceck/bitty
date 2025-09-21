@@ -6,7 +6,7 @@ import { ScrollView } from "../../components/ScrollView.js";
 const getTypeIcon = (type: CipherType) => {
   switch (type) {
     case CipherType.Login:
-      return "👤";
+      return "🔑";
     case CipherType.SecureNote:
       return "📝";
     case CipherType.Card:
