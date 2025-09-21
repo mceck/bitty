@@ -21,6 +21,7 @@ export function DashboardView({ onLogout }: Props) {
   const [syncState, setSyncState] = useState<SyncResponse | null>(sync);
   const [searchQuery, setSearchQuery] = useState("");
   const [listIndex, setListIndex] = useState(0);
+  const [showDetails, setShowDetails] = useState(true);
   const [focusedComponent, setFocusedComponent] =
     useState<FocusableComponent>("list");
   const [detailMode, setDetailMode] = useState<DetailViewMode>("view");
@@ -84,15 +85,22 @@ export function DashboardView({ onLogout }: Props) {
     } else if (focusedComponent === "list") {
       if (key.return || key.tab) {
         setFocusedComponent("detail");
-        focusNext();
+        setShowDetails(false);
       }
       if (input === "n") {
         setDetailMode("new");
         setEditedCipher(emptyCipher);
         setFocusedComponent("detail");
+        setShowDetails(false);
       }
     }
   });
+
+  useEffect(() => {
+    if (showDetails) return;
+    setShowDetails(true);
+    setTimeout(focusNext, 50);
+  }, [showDetails]);
 
   return (
     <Box flexDirection="column" width="100%" height={stdout.rows - 2}>
@@ -139,7 +147,7 @@ export function DashboardView({ onLogout }: Props) {
         />
 
         <CipherDetail
-          selectedCipher={selectedCipher}
+          selectedCipher={showDetails ? selectedCipher : null}
           mode={detailMode}
           isFocused={focusedComponent === "detail"}
           onChange={(cipher) => {

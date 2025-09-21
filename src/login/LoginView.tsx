@@ -84,18 +84,12 @@ export function LoginView({ onLogin }: Props) {
         <Text color={primary}>{art}</Text>
       </Box>
       <Box flexDirection="column" width="50%">
-        <TextInput
-          placeholder="Server URL"
-          value={url}
-          onChange={setUrl}
-          onSubmit={focusNext}
-        />
+        <TextInput placeholder="Server URL" value={url} onChange={setUrl} />
         <TextInput
           autoFocus
           placeholder="Email address"
           value={email}
           onChange={setEmail}
-          onSubmit={focusNext}
         />
         <TextInput
           placeholder="Master password"

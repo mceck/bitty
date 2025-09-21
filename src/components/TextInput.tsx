@@ -1,4 +1,4 @@
-import { Text, Box, useFocus, useInput } from "ink";
+import { Text, Box, useFocus, useInput, useFocusManager } from "ink";
 import { primary } from "../theme/style.js";
 import { useEffect, useMemo, useState } from "react";
 import clipboard from "clipboardy";
@@ -41,6 +41,7 @@ export const TextInput = ({
   const [scrollOffset, setScrollOffset] = useState(0);
   const { isFocused } = useFocus({ id, isActive, autoFocus });
   const { showStatusMessage } = useStatusMessage();
+  const { focusNext } = useFocusManager();
 
   const displayValue = useMemo(() => {
     let displayValue = value;
@@ -211,7 +212,8 @@ export const TextInput = ({
 
         onChange?.(newValue);
       } else {
-        onSubmit?.();
+        if (onSubmit) onSubmit();
+        else focusNext();
       }
     } else if (input) {
       if (multiline) {

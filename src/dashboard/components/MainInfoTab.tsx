@@ -12,7 +12,6 @@ export function MainTab({
   selectedCipher: Cipher;
   onChange: (cipher: Cipher) => void;
 }) {
-  const { focusNext } = useFocusManager();
   const { stdout } = useStdout();
   let noteH = stdout.rows - 26;
   if (selectedCipher.type !== CipherType.Login) noteH += 6;
@@ -29,7 +28,6 @@ export function MainTab({
             inline
             isActive={isFocused}
             value={selectedCipher.name}
-            onSubmit={focusNext}
             onChange={(value) => onChange({ ...selectedCipher, name: value })}
           />
         </Box>
@@ -47,7 +45,6 @@ export function MainTab({
               inline
               isActive={isFocused}
               value={selectedCipher.login?.username ?? ""}
-              onSubmit={focusNext}
               onChange={(value) =>
                 onChange({
                   ...selectedCipher,
@@ -73,7 +70,6 @@ export function MainTab({
               showPasswordOnFocus
               isActive={isFocused}
               value={selectedCipher.login?.password ?? ""}
-              onSubmit={focusNext}
               onChange={(value) =>
                 onChange({
                   ...selectedCipher,
@@ -97,7 +93,6 @@ export function MainTab({
               inline
               isActive={isFocused}
               value={selectedCipher.login?.uris?.[0]?.uri ?? ""}
-              onSubmit={focusNext}
               onChange={(value) =>
                 onChange({
                   ...selectedCipher,
@@ -121,13 +116,12 @@ export function MainTab({
             Notes:
           </Text>
         </Box>
-        <Box flexGrow={1} height={noteH}>
+        <Box flexGrow={1} minHeight={7}>
           <TextInput
             multiline
-            maxLines={noteH - 2}
+            maxLines={5}
             isActive={isFocused}
             value={selectedCipher.notes ?? ""}
-            onSubmit={focusNext}
             onChange={(value) =>
               onChange({
                 ...selectedCipher,

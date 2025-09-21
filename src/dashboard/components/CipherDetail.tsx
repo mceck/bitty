@@ -1,7 +1,6 @@
-import { Box, Text, useFocusManager, useStdout } from "ink";
-import { TextInput } from "../../components/TextInput.js";
+import { Box } from "ink";
 import { primaryLight } from "../../theme/style.js";
-import { Cipher, CipherType } from "mcbw";
+import { Cipher } from "mcbw";
 import { Button } from "../../components/Button.js";
 import { useState } from "react";
 import { MoreInfoTab } from "./MoreInfoTab.js";
@@ -33,7 +32,7 @@ export function CipherDetail({
       borderLeftColor="gray"
     >
       {selectedCipher && (
-        <Box flexDirection="column">
+        <Box flexDirection="column" justifyContent="space-between" flexGrow={1}>
           {isMoreInfoTab ? (
             <MoreInfoTab
               isFocused={isFocused}

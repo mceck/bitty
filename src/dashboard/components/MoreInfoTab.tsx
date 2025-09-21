@@ -12,7 +12,6 @@ export function MoreInfoTab({
   selectedCipher: Cipher;
   onChange: (cipher: Cipher) => void;
 }) {
-  const { focusNext } = useFocusManager();
   const { stdout } = useStdout();
   return (
     <Box flexDirection="column" gap={1} height={stdout.rows - 18}>
@@ -83,7 +82,6 @@ export function MoreInfoTab({
                   inline
                   isActive={isFocused}
                   value={field.value ?? ""}
-                  onSubmit={focusNext}
                   onChange={(value) => {
                     const newFields = selectedCipher.fields?.map((f, i) =>
                       i === idx ? { ...f, value } : f
@@ -108,7 +106,6 @@ export function MoreInfoTab({
                   inline
                   isActive={isFocused}
                   value={uri.uri ?? ""}
-                  onSubmit={focusNext}
                   onChange={(value) => {
                     const newUris = selectedCipher.login?.uris?.map((u, i) =>
                       i === idx ? { ...u, uri: value } : u
