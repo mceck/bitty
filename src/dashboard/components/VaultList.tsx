@@ -1,7 +1,9 @@
-import { Box, Text, useStdout } from "ink";
+import { Box, Text, useInput, useStdout } from "ink";
 import { primary, primaryDark, primaryLight } from "../../theme/style.js";
 import { Cipher, CipherType } from "mcbw";
 import { ScrollView } from "../../components/ScrollView.js";
+import clipboard from "clipboardy";
+import { useStatusMessage } from "../../hooks/status-message.js";
 
 const getTypeIcon = (type: CipherType) => {
   switch (type) {
@@ -30,6 +32,21 @@ export function VaultList({
   onSelect: (index: number) => void;
 }) {
   const { stdout } = useStdout();
+  const { showStatusMessage } = useStatusMessage();
+  useInput(
+    (input, key) => {
+      if (key.ctrl && input === "y") {
+        clipboard.writeSync(
+          filteredCiphers[selected ?? 0]?.login?.password ||
+            filteredCiphers[selected ?? 0]?.notes ||
+            filteredCiphers[selected ?? 0]?.name ||
+            ""
+        );
+        showStatusMessage("📋 Copied to clipboard!", "success");
+      }
+    },
+    { isActive: isFocused }
+  );
   return (
     <Box
       flexDirection="column"

@@ -19,27 +19,29 @@ export const ScrollView = <T,>({
   children: (arg: { el: T; index: number; selected: boolean }) => ReactNode;
 }) => {
   const [offset, setOffset] = useState(0);
-  useInput((input, key) => {
-    if (!isActive) return;
-    if (key.upArrow) {
-      if (selectedIndex === offset && offset > 0) {
-        setOffset(Math.max(0, offset - 1));
+  useInput(
+    (input, key) => {
+      if (key.upArrow) {
+        if (selectedIndex === offset && offset > 0) {
+          setOffset(Math.max(0, offset - 1));
+        }
+        const newIndex = Math.max(0, selectedIndex - 1);
+        onSelect?.(newIndex);
+      } else if (key.downArrow) {
+        if (
+          selectedIndex === offset + count - 1 &&
+          offset + count < list.length
+        ) {
+          setOffset(Math.min(list.length - count, offset + 1));
+        }
+        const newIndex = Math.min(list.length - 1, selectedIndex + 1);
+        onSelect?.(newIndex);
+      } else if (key.return) {
+        onSubmit?.(selectedIndex);
       }
-      const newIndex = Math.max(0, selectedIndex - 1);
-      onSelect?.(newIndex);
-    } else if (key.downArrow) {
-      if (
-        selectedIndex === offset + count - 1 &&
-        offset + count < list.length
-      ) {
-        setOffset(Math.min(list.length - count, offset + 1));
-      }
-      const newIndex = Math.min(list.length - 1, selectedIndex + 1);
-      onSelect?.(newIndex);
-    } else if (key.return) {
-      onSubmit?.(selectedIndex);
-    }
-  });
+    },
+    { isActive }
+  );
 
   useEffect(() => {
     if (selectedIndex < offset) setOffset(selectedIndex);

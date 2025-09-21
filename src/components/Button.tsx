@@ -20,20 +20,21 @@ export const Button = ({
   const [askConfirm, setAskConfirm] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useInput((input, key) => {
-    if (!isFocused || !isActive) return;
-
-    if (key.return) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (doubleConfirm && !askConfirm) {
-        setAskConfirm(true);
-        timeoutRef.current = setTimeout(() => setAskConfirm(false), 1000);
-        return;
+  useInput(
+    (input, key) => {
+      if (key.return) {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (doubleConfirm && !askConfirm) {
+          setAskConfirm(true);
+          timeoutRef.current = setTimeout(() => setAskConfirm(false), 1000);
+          return;
+        }
+        if (askConfirm) setAskConfirm(false);
+        onClick();
       }
-      if (askConfirm) setAskConfirm(false);
-      onClick();
-    }
-  });
+    },
+    { isActive: isFocused && isActive }
+  );
 
   return (
     <Box
