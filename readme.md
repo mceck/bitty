@@ -13,6 +13,8 @@ Bitwarden compatible TUI for your terminal.
 ![bw-dashboard](./media/screen1.png)
 ![bw-dashboard](./media/screen2.png)
 
+Works also with Vaultwarden.
+
 ## Acknowledgments
 
 - [Bitwarden](https://github.com/bitwarden)

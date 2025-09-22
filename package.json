@@ -2,6 +2,16 @@
   "name": "bitty-tui",
   "version": "0.0.2",
   "license": "MIT",
+  "repository": "https://github.com/mceck/bitty",
+  "keywords": [
+    "bitwarden",
+    "vaultwarden",
+    "tui",
+    "cli",
+    "terminal",
+    "ink",
+    "react"
+  ],
   "bin": {
     "bitty": "dist/cli.js"
   },
