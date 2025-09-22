@@ -186,15 +186,13 @@ class Bw {
   }
   decodeUserKeys(userKey: string, privateKey: string | null, keys: BwKeys) {
     if (!keys.encryptionKey) throw new Error("Encryption key not derived yet");
-    console.log("Decode user keys");
     const userKeyDecrypted = this.decryptKey(userKey, keys.encryptionKey);
     keys.userKey = {
-      key: new Uint8Array(userKeyDecrypted.buffer.slice(0, 32)),
-      mac: new Uint8Array(userKeyDecrypted.buffer.slice(32, 64)),
+      key: userKeyDecrypted.subarray(0, 32),
+      mac: userKeyDecrypted.subarray(32, 64),
     };
 
     if (privateKey) {
-      console.log("Decode private key");
       const privateKeyDecrypted = this.decryptKey(privateKey, keys.userKey);
       keys.privateKey = {
         key: privateKeyDecrypted,
@@ -204,27 +202,15 @@ class Bw {
     return keys;
   }
   decryptKey(value: string, key: Key) {
-    console.log("Starting key decryption:", {
-      valueLength: value?.length,
-      hasKey: !!key,
-      keyLength: key?.key?.length,
-    });
-
     const data = this.parseBwString(value);
-
-    console.log("Key decryption type:", {
-      type: data.type,
-      hasIV: !!data.iv,
-      dataLength: data.key?.length,
-    });
 
     try {
       switch (data.type) {
         case KeyType.AES_256:
         case KeyType.AES_256_MAC:
-          return this.decryptAes256(data, key, "aes-256-cbc");
+          return this.decryptAes(data, key, "aes-256-cbc");
         case KeyType.AES_128_MAC:
-          return this.decryptAes256(data, key, "aes-128-cbc");
+          return this.decryptAes(data, key, "aes-128-cbc");
         case KeyType.RSA_SHA1:
         case KeyType.RSA_SHA1_MAC:
           return this.decryptRsaOaep(data, key, "sha1");
@@ -235,10 +221,6 @@ class Bw {
           throw new Error(`Unknown key type: ${data.type}`);
       }
     } catch (error) {
-      console.error("Key decryption failed:", {
-        error: error instanceof Error ? error.message : String(error),
-        type: data.type,
-      });
       throw error;
     }
   }
@@ -246,29 +228,33 @@ class Bw {
     return this.decryptKey(value, key).toString("utf-8");
   }
 
-  encrypt(value: string, userKey: Key) {
-    if (!value || !userKey || !userKey.key) {
+  encrypt(value: string, key: Key) {
+    if (!value || !key?.key) {
       throw new Error("Missing value or key for encryption");
     }
 
     const iv = crypto.randomBytes(16);
+    const encryptionKey = Buffer.from(key.key);
+    if (encryptionKey.length < 32) {
+      throw new Error(`Key too short: ${encryptionKey.length} bytes, need 32`);
+    }
 
-    const cipher = crypto.createCipheriv(
-      "aes-256-cbc",
-      Buffer.from(userKey.key),
-      iv
-    );
+    const aesKey = encryptionKey.subarray(0, 32);
+    const cipher = crypto.createCipheriv("aes-256-cbc", aesKey, iv);
     let encrypted = cipher.update(value, "utf-8");
     encrypted = Buffer.concat([encrypted, cipher.final()]);
 
     let macKey: Buffer;
-    if (userKey.mac && userKey.mac.length > 0) {
-      macKey = Buffer.from(userKey.mac);
-    } else if (userKey.key.length >= 64) {
-      macKey = Buffer.from(userKey.key).subarray(32, 64);
+    if (key.mac && key.mac.length > 0) {
+      macKey = Buffer.from(key.mac);
+    } else if (key.key.length >= 64) {
+      macKey = encryptionKey.subarray(32, 64);
     } else {
-      throw new Error("MAC key missing or invalid");
+      throw new Error(
+        "MAC key missing or invalid (need either mac field or 64-byte key)"
+      );
     }
+
     const mac = crypto
       .createHmac("sha256", macKey)
       .update(iv)
@@ -290,113 +276,74 @@ class Bw {
     return crypto.pbkdf2Sync(password, salt, iterations, 32, "sha256");
   }
   hkdfExpandSha256(ikm: Uint8Array, info: string) {
-    const prk = crypto
-      .createHmac("sha256", Buffer.alloc(32, 0))
-      .update(ikm)
-      .digest();
-    const infoBuf = Buffer.from(info + String.fromCharCode(1), "utf-8");
-    return crypto.createHmac("sha256", prk).update(infoBuf).digest();
+    const mac = crypto.createHmac("sha256", ikm);
+    mac.update(info);
+    mac.update(Buffer.from([0x01]));
+    return mac.digest();
   }
   parseBwString(value: string): Key {
     if (!value?.length) {
       throw new Error("Empty value");
     }
-    console.log("Parsing BW string:", {
-      valueLength: value.length,
-      firstChar: value[0],
-      format: value.slice(0, 20) + "...", // Show start of string
-    });
-
     const type = value[0]! as KeyType;
     let ivb64, ciphertextB64, hmacB64;
     const v = value.slice(2).split("|");
-
-    console.log("Split parts:", {
-      partsCount: v.length,
-      type,
-    });
 
     if (["0", "1", "2"].includes(type)) {
       ivb64 = v[0];
       ciphertextB64 = v[1];
       hmacB64 = v[2];
-      console.log("AES format detected", {
-        hasIV: !!ivb64,
-        hasCiphertext: !!ciphertextB64,
-        hasHmac: !!hmacB64,
-      });
     } else if (["3", "4", "5", "6"].includes(type)) {
       ciphertextB64 = v[0];
       hmacB64 = v[1];
-      console.log("RSA format detected", {
-        hasCiphertext: !!ciphertextB64,
-        hasHmac: !!hmacB64,
-      });
     }
 
     const iv = ivb64 ? Buffer.from(ivb64, "base64") : null;
     const ciphertext = Buffer.from(ciphertextB64!, "base64");
     const hmac = hmacB64 ? Buffer.from(hmacB64, "base64") : null;
 
-    console.log("Parsed components:", {
-      type,
-      ivLength: iv?.length ?? 0,
-      ciphertextLength: ciphertext.length,
-      hmacLength: hmac?.length ?? 0,
-    });
-
     return { type, iv, key: ciphertext, mac: hmac! };
   }
 
-  decryptAes256(ciphertext: Key, key: Key, algorithm: string) {
+  decryptAes(ciphertext: Key, key: Key, algorithm: string) {
     if (!ciphertext.iv) throw new Error("Missing IV for AES decryption");
+    if (!key.key || !key.key.length) return Buffer.from("");
 
+    const keyLength = algorithm.includes("256") ? 32 : 16;
     const keyBuf = Buffer.from(key.key);
-    const ivBuf = Buffer.from(ciphertext.iv);
-    const dataBuf = Buffer.from(ciphertext.key);
-
-    const decipher = crypto.createDecipheriv(algorithm, keyBuf, ivBuf);
-    decipher.setAutoPadding(false);
-    const decrypted = decipher.update(dataBuf);
+    if (keyBuf.length < keyLength) {
+      throw new Error(
+        `Key too short: ${keyBuf.length} bytes, need ${keyLength}`
+      );
+    }
+    const finalKey = keyBuf.subarray(0, keyLength);
+    const decipher = crypto.createDecipheriv(
+      algorithm,
+      finalKey,
+      ciphertext.iv
+    );
+    const decrypted = decipher.update(ciphertext.key);
     const final = decipher.final();
 
     return Buffer.concat([decrypted, final]);
   }
 
   decryptRsaOaep(ciphertext: Key, key: Key, hashAlgorithm: string): Buffer {
-    // let privateKeyObject: crypto.KeyObject;
+    const privateKey = crypto.createPrivateKey({
+      key: Buffer.from(key.key),
+      format: "der",
+      type: "pkcs1",
+    });
 
-    // try {
-    //   privateKeyObject = crypto.createPrivateKey({
-    //     key: key.key as any,
-    //     format: "der",
-    //     type: "pkcs1",
-    //   });
-    // } catch (err) {
-    //   try {
-    //     privateKeyObject = crypto.createPrivateKey({
-    //       key: key.key as any,
-    //       format: "der",
-    //       type: "pkcs8",
-    //     });
-    //   } catch (fallbackErr) {
-    //     throw new Error("Failed to parse private key as PKCS#1 or PKCS#8 DER.");
-    //   }
-    // }
-
-    try {
-      const decryptedData = crypto.privateDecrypt(
-        {
-          key: Buffer.from(key.key),
-          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-          oaepHash: hashAlgorithm,
-        },
-        Buffer.from(ciphertext.key)
-      );
-      return decryptedData;
-    } catch (e) {
-      throw new Error(`RSA decryption failed: ${(e as Error).message}`);
-    }
+    return crypto.privateDecrypt(
+      {
+        key: privateKey,
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: hashAlgorithm,
+        oaepLabel: Buffer.alloc(0),
+      },
+      Buffer.from(ciphertext.key)
+    );
   }
 }
 
@@ -501,7 +448,6 @@ export class Client {
       userKey,
       privateKey,
     };
-    console.log("Keys", this.keys);
     this.syncCache = null;
     this.decryptedSyncCache = null;
     this.orgKeys = {};
