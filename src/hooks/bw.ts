@@ -1,7 +1,7 @@
 import os from "os";
 import fs from "fs";
 import path from "path";
-import { Client, SyncResponse, CipherType, BwKeys } from "mcbw";
+import { BwKeys, CipherType, Client, SyncResponse } from "../clients/bw.js";
 import { useCallback, useEffect, useState } from "react";
 
 interface BwConfig {

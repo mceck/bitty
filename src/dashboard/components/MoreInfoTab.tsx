@@ -1,5 +1,5 @@
 import { Box, Text, useFocusManager, useStdout } from "ink";
-import { Cipher, CipherType } from "mcbw";
+import { Cipher, CipherType } from "../../clients/bw.js";
 import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
 

@@ -1,6 +1,6 @@
 import { Box, Text, useInput, useStdout } from "ink";
 import { primary, primaryDark, primaryLight } from "../../theme/style.js";
-import { Cipher, CipherType } from "mcbw";
+import { Cipher, CipherType } from "../../clients/bw.js";
 import { ScrollView } from "../../components/ScrollView.js";
 import clipboard from "clipboardy";
 import { useStatusMessage } from "../../hooks/status-message.js";

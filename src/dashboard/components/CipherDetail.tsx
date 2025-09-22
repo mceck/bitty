@@ -1,6 +1,6 @@
 import { Box } from "ink";
 import { primaryLight } from "../../theme/style.js";
-import { Cipher, CipherType } from "mcbw";
+import { Cipher, CipherType } from "../../clients/bw.js";
 import { Button } from "../../components/Button.js";
 import { useState } from "react";
 import { MoreInfoTab } from "./MoreInfoTab.js";

@@ -1,0 +1,878 @@
+import https from "node:https";
+import crypto from "node:crypto";
+
+interface FetchResponse {
+  json: () => Promise<any>;
+  text: () => Promise<string>;
+}
+
+function fetch(
+  url: string,
+  options: { method?: string; headers?: Record<string, string> } = {},
+  body: any = null
+): Promise<FetchResponse> {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const requestOptions = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname + urlObj.search,
+      method: options.method || "GET",
+      headers: options.headers || {},
+    };
+
+    const req = https.request(requestOptions, (res) => {
+      let data = "";
+      const onData = (chunk: any) => {
+        data += chunk;
+      };
+      const onEnd = () => {
+        cleanup();
+        if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+          reject(
+            new Error(`HTTP error: ${res.statusCode} ${res.statusMessage}`)
+          );
+          return;
+        }
+        resolve({
+          json: () => Promise.resolve(JSON.parse(data)),
+          text: () => Promise.resolve(data),
+        });
+      };
+      const onError = (error: Error) => {
+        cleanup();
+        reject(error);
+      };
+
+      const cleanup = () => {
+        res.removeListener("data", onData);
+        res.removeListener("end", onEnd);
+        res.removeListener("error", onError);
+      };
+
+      res.on("data", onData);
+      res.on("end", onEnd);
+      res.on("error", onError);
+    });
+
+    req.on("error", (error) => {
+      reject(error);
+    });
+
+    if (body) {
+      req.write(typeof body === "string" ? body : JSON.stringify(body));
+    }
+    req.end();
+  });
+}
+
+export enum CipherType {
+  Login = 1,
+  SecureNote = 2,
+  Card = 3,
+  Identity = 4,
+  SSHKey = 5,
+}
+
+export enum KeyType {
+  AES_256 = "0",
+  AES_128_MAC = "1",
+  AES_256_MAC = "2",
+  RSA_SHA256 = "3",
+  RSA_SHA1 = "4",
+  RSA_SHA256_MAC = "5",
+  RSA_SHA1_MAC = "6",
+}
+
+export interface Cipher {
+  id: string;
+  type: CipherType;
+  key?: string | null;
+  folderId?: string | null;
+  organizationId: string | null;
+  collectionIds?: string[] | null;
+  deletedDate: string | null;
+  name: string;
+  notes: string;
+  favorite: boolean;
+  login?: {
+    response?: null;
+    uri?: string;
+    uris?: {
+      uri: string;
+      uriChecksum?: string | null;
+    }[];
+    username?: string;
+    password?: string;
+  };
+  identity?: {
+    address1: string | null;
+    address2: string | null;
+    address3: string | null;
+    city: string | null;
+    company: string | null;
+    country: string | null;
+    email: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    licenseNumber: string | null;
+    middleName: string | null;
+    passportNumber: string | null;
+    phone: string | null;
+    postalCode: string | null;
+    ssn: string | null;
+    state: string | null;
+    title: string | null;
+    username: string | null;
+  };
+  sshKey?: {
+    keyFingerprint?: string | null;
+    privateKey?: string | null;
+    publicKey?: string | null;
+  };
+  fields?: { name: string; value: string; type: number }[];
+}
+
+export type CipherDto = Omit<Cipher, "id" | "data">;
+
+export interface SyncResponse {
+  ciphers: Cipher[];
+  profile?: {
+    organizations?: { id: string; name: string; key: string }[];
+  };
+}
+
+export interface Key {
+  type?: KeyType | null;
+  iv?: Uint8Array | null;
+  key: Uint8Array;
+  mac: Uint8Array;
+}
+
+export interface ClientConfig {
+  baseUrl?: string;
+  apiUrl?: string;
+  identityUrl?: string;
+}
+
+export interface BwKeys {
+  masterKey?: Uint8Array;
+  masterPasswordHash?: string;
+  encryptionKey?: Key;
+  userKey?: Key;
+  privateKey?: Key;
+}
+
+class Bw {
+  deriveMasterKey(
+    email: string,
+    password: string,
+    kdfIterations: number
+  ): BwKeys {
+    const masterKey = this.derivePbkdf2(password, email, kdfIterations);
+    const masterPasswordHashBytes = this.derivePbkdf2(masterKey, password, 1);
+    const masterPasswordHash = Buffer.from(masterPasswordHashBytes).toString(
+      "base64"
+    );
+    const encryptionKey = this.hkdfExpandSha256(masterKey, "enc");
+    const encryptionKeyMac = this.hkdfExpandSha256(masterKey, "mac");
+    return {
+      masterKey,
+      masterPasswordHash,
+      encryptionKey: {
+        key: encryptionKey,
+        mac: encryptionKeyMac,
+      },
+    };
+  }
+  decodeUserKeys(userKey: string, privateKey: string | null, keys: BwKeys) {
+    if (!keys.encryptionKey) throw new Error("Encryption key not derived yet");
+    console.log("Decode user keys");
+    const userKeyDecrypted = this.decryptKey(userKey, keys.encryptionKey);
+    keys.userKey = {
+      key: new Uint8Array(userKeyDecrypted.buffer.slice(0, 32)),
+      mac: new Uint8Array(userKeyDecrypted.buffer.slice(32, 64)),
+    };
+
+    if (privateKey) {
+      console.log("Decode private key");
+      const privateKeyDecrypted = this.decryptKey(privateKey, keys.userKey);
+      keys.privateKey = {
+        key: privateKeyDecrypted,
+        mac: new Uint8Array(),
+      };
+    }
+    return keys;
+  }
+  decryptKey(value: string, key: Key) {
+    console.log("Starting key decryption:", {
+      valueLength: value?.length,
+      hasKey: !!key,
+      keyLength: key?.key?.length,
+    });
+
+    const data = this.parseBwString(value);
+
+    console.log("Key decryption type:", {
+      type: data.type,
+      hasIV: !!data.iv,
+      dataLength: data.key?.length,
+    });
+
+    try {
+      switch (data.type) {
+        case KeyType.AES_256:
+        case KeyType.AES_256_MAC:
+          return this.decryptAes256(data, key, "aes-256-cbc");
+        case KeyType.AES_128_MAC:
+          return this.decryptAes256(data, key, "aes-128-cbc");
+        case KeyType.RSA_SHA1:
+        case KeyType.RSA_SHA1_MAC:
+          return this.decryptRsaOaep(data, key, "sha1");
+        case KeyType.RSA_SHA256:
+        case KeyType.RSA_SHA256_MAC:
+          return this.decryptRsaOaep(data, key, "sha256");
+        default:
+          throw new Error(`Unknown key type: ${data.type}`);
+      }
+    } catch (error) {
+      console.error("Key decryption failed:", {
+        error: error instanceof Error ? error.message : String(error),
+        type: data.type,
+      });
+      throw error;
+    }
+  }
+  decrypt(value: string, key: Key) {
+    return this.decryptKey(value, key).toString("utf-8");
+  }
+
+  encrypt(value: string, userKey: Key) {
+    if (!value || !userKey || !userKey.key) {
+      throw new Error("Missing value or key for encryption");
+    }
+
+    const iv = crypto.randomBytes(16);
+
+    const cipher = crypto.createCipheriv(
+      "aes-256-cbc",
+      Buffer.from(userKey.key),
+      iv
+    );
+    let encrypted = cipher.update(value, "utf-8");
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+
+    let macKey: Buffer;
+    if (userKey.mac && userKey.mac.length > 0) {
+      macKey = Buffer.from(userKey.mac);
+    } else if (userKey.key.length >= 64) {
+      macKey = Buffer.from(userKey.key).subarray(32, 64);
+    } else {
+      throw new Error("MAC key missing or invalid");
+    }
+    const mac = crypto
+      .createHmac("sha256", macKey)
+      .update(iv)
+      .update(encrypted)
+      .digest();
+
+    const ivB64 = iv.toString("base64");
+    const encryptedB64 = encrypted.toString("base64");
+    const macB64 = mac.toString("base64");
+
+    return `2.${ivB64}|${encryptedB64}|${macB64}`;
+  }
+
+  derivePbkdf2(
+    password: crypto.BinaryLike,
+    salt: crypto.BinaryLike,
+    iterations: number
+  ) {
+    return crypto.pbkdf2Sync(password, salt, iterations, 32, "sha256");
+  }
+  hkdfExpandSha256(ikm: Uint8Array, info: string) {
+    const prk = crypto
+      .createHmac("sha256", Buffer.alloc(32, 0))
+      .update(ikm)
+      .digest();
+    const infoBuf = Buffer.from(info + String.fromCharCode(1), "utf-8");
+    return crypto.createHmac("sha256", prk).update(infoBuf).digest();
+  }
+  parseBwString(value: string): Key {
+    if (!value?.length) {
+      throw new Error("Empty value");
+    }
+    console.log("Parsing BW string:", {
+      valueLength: value.length,
+      firstChar: value[0],
+      format: value.slice(0, 20) + "...", // Show start of string
+    });
+
+    const type = value[0]! as KeyType;
+    let ivb64, ciphertextB64, hmacB64;
+    const v = value.slice(2).split("|");
+
+    console.log("Split parts:", {
+      partsCount: v.length,
+      type,
+    });
+
+    if (["0", "1", "2"].includes(type)) {
+      ivb64 = v[0];
+      ciphertextB64 = v[1];
+      hmacB64 = v[2];
+      console.log("AES format detected", {
+        hasIV: !!ivb64,
+        hasCiphertext: !!ciphertextB64,
+        hasHmac: !!hmacB64,
+      });
+    } else if (["3", "4", "5", "6"].includes(type)) {
+      ciphertextB64 = v[0];
+      hmacB64 = v[1];
+      console.log("RSA format detected", {
+        hasCiphertext: !!ciphertextB64,
+        hasHmac: !!hmacB64,
+      });
+    }
+
+    const iv = ivb64 ? Buffer.from(ivb64, "base64") : null;
+    const ciphertext = Buffer.from(ciphertextB64!, "base64");
+    const hmac = hmacB64 ? Buffer.from(hmacB64, "base64") : null;
+
+    console.log("Parsed components:", {
+      type,
+      ivLength: iv?.length ?? 0,
+      ciphertextLength: ciphertext.length,
+      hmacLength: hmac?.length ?? 0,
+    });
+
+    return { type, iv, key: ciphertext, mac: hmac! };
+  }
+
+  decryptAes256(ciphertext: Key, key: Key, algorithm: string) {
+    if (!ciphertext.iv) throw new Error("Missing IV for AES decryption");
+
+    const keyBuf = Buffer.from(key.key);
+    const ivBuf = Buffer.from(ciphertext.iv);
+    const dataBuf = Buffer.from(ciphertext.key);
+
+    const decipher = crypto.createDecipheriv(algorithm, keyBuf, ivBuf);
+    decipher.setAutoPadding(false);
+    const decrypted = decipher.update(dataBuf);
+    const final = decipher.final();
+
+    return Buffer.concat([decrypted, final]);
+  }
+
+  decryptRsaOaep(ciphertext: Key, key: Key, hashAlgorithm: string): Buffer {
+    // let privateKeyObject: crypto.KeyObject;
+
+    // try {
+    //   privateKeyObject = crypto.createPrivateKey({
+    //     key: key.key as any,
+    //     format: "der",
+    //     type: "pkcs1",
+    //   });
+    // } catch (err) {
+    //   try {
+    //     privateKeyObject = crypto.createPrivateKey({
+    //       key: key.key as any,
+    //       format: "der",
+    //       type: "pkcs8",
+    //     });
+    //   } catch (fallbackErr) {
+    //     throw new Error("Failed to parse private key as PKCS#1 or PKCS#8 DER.");
+    //   }
+    // }
+
+    try {
+      const decryptedData = crypto.privateDecrypt(
+        {
+          key: Buffer.from(key.key),
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+          oaepHash: hashAlgorithm,
+        },
+        Buffer.from(ciphertext.key)
+      );
+      return decryptedData;
+    } catch (e) {
+      throw new Error(`RSA decryption failed: ${(e as Error).message}`);
+    }
+  }
+}
+
+const mcbw = new Bw();
+
+export class Client {
+  apiUrl!: string;
+  identityUrl!: string;
+  keys: BwKeys;
+  orgKeys: Record<string, Key>;
+  token: string | null;
+  refreshToken: string | null;
+  tokenExpiration: number | null;
+  decryptedSyncCache: SyncResponse | null;
+  syncCache: SyncResponse | null;
+
+  constructor(
+    uri: ClientConfig = {
+      baseUrl: "https://vault.bitwarden.eu",
+    }
+  ) {
+    this.setUrls(uri);
+    this.keys = {};
+    this.orgKeys = {};
+    this.token = null;
+    this.refreshToken = null;
+    this.tokenExpiration = null;
+    this.decryptedSyncCache = null;
+    this.syncCache = null;
+  }
+
+  private patchObject<T>(original: T, patch: Partial<T>): T {
+    const result = { ...original };
+    for (const key in patch) {
+      const originalValue = (original as any)[key];
+      const patchValue = (patch as any)[key];
+
+      if (
+        originalValue &&
+        patchValue &&
+        typeof originalValue === "object" &&
+        !Array.isArray(originalValue) &&
+        typeof patchValue === "object" &&
+        !Array.isArray(patchValue)
+      ) {
+        (result as any)[key] = this.patchObject(originalValue, patchValue);
+      } else if (patchValue !== undefined) {
+        (result as any)[key] = patchValue;
+      }
+    }
+    return result;
+  }
+
+  setUrls(uri: ClientConfig) {
+    if (uri.baseUrl) {
+      this.apiUrl = uri.baseUrl + "/api";
+      this.identityUrl = uri.baseUrl + "/identity";
+    } else {
+      this.apiUrl = uri.apiUrl!;
+      this.identityUrl = uri.identityUrl!;
+    }
+  }
+
+  async login(email: string, password: string): Promise<void> {
+    const prelogin = await fetch(
+      `${this.identityUrl}/accounts/prelogin`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      {
+        email,
+      }
+    ).then((r) => r.json());
+
+    const keys = mcbw.deriveMasterKey(email, password, prelogin.kdfIterations);
+
+    const identityReq = await fetch(
+      `${this.identityUrl}/connect/token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      },
+      `username=${email}&password=${keys.masterPasswordHash}&grant_type=password&deviceName=chrome&deviceType=9&deviceIdentifier=928f9664-5559-4a7b-9853-caf5bfa5dd57&client_id=web&scope=api%20offline_access`
+    ).then((r) => r.json());
+
+    this.token = identityReq.access_token;
+    this.refreshToken = identityReq.refresh_token;
+    this.tokenExpiration = Date.now() + identityReq.expires_in * 1000;
+    const { userKey, privateKey } = mcbw.decodeUserKeys(
+      identityReq.Key,
+      identityReq.PrivateKey || "",
+      keys
+    );
+
+    this.keys = {
+      ...keys,
+      userKey,
+      privateKey,
+    };
+    console.log("Keys", this.keys);
+    this.syncCache = null;
+    this.decryptedSyncCache = null;
+    this.orgKeys = {};
+  }
+
+  async checkToken() {
+    if (!this.tokenExpiration || Date.now() >= this.tokenExpiration) {
+      if (!this.refreshToken) {
+        throw new Error("No refresh token available. Please login first.");
+      }
+      const identityReq = await fetch(
+        `${this.identityUrl}/connect/token`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        },
+        `refresh_token=${this.refreshToken}&grant_type=refresh_token&client_id=web&scope=api%20offline_access`
+      ).then((r) => r.json());
+
+      this.token = identityReq.access_token;
+      this.refreshToken = identityReq.refresh_token;
+      this.tokenExpiration = Date.now() + identityReq.expires_in * 1000;
+    }
+  }
+
+  async syncRefresh() {
+    await this.checkToken();
+    this.syncCache = await fetch(`${this.apiUrl}/sync?excludeDomains=true`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        "bitwarden-client-version": "2025.9.0",
+      },
+    }).then((r) => r.json());
+
+    if (!this.keys.privateKey) return this.syncCache;
+
+    for (const org of this.syncCache?.profile?.organizations || []) {
+      if (org.id in this.orgKeys) continue;
+      this.orgKeys[org.id] = {
+        key: mcbw.decryptKey(org.key, this.keys.privateKey),
+        mac: new Uint8Array(),
+      };
+    }
+    return this.syncCache;
+  }
+
+  getDecryptionKey(cipher: Partial<Cipher>) {
+    let key = this.keys.userKey;
+    if (cipher.organizationId) {
+      key = this.orgKeys[cipher.organizationId] || key;
+    }
+    if (key && cipher.key) {
+      key = { key: mcbw.decryptKey(cipher.key, key!), mac: new Uint8Array() };
+    }
+    return key;
+  }
+
+  async getDecryptedSync({ forceRefresh = false } = {}) {
+    if (this.decryptedSyncCache && !forceRefresh) {
+      return this.decryptedSyncCache;
+    }
+    if (!this.syncCache || forceRefresh) {
+      await this.syncRefresh();
+    }
+    this.decryptedSyncCache = {
+      ...this.syncCache,
+      ciphers: this.syncCache!.ciphers.map((cipher) => {
+        const key = this.getDecryptionKey(cipher);
+        const ret = JSON.parse(JSON.stringify(cipher));
+        ret.name = this.decrypt(cipher.name, key);
+        ret.data.name = ret.name;
+        ret.notes = this.decrypt(cipher.notes, key);
+        ret.data.notes = ret.notes;
+        if (cipher.login) {
+          ret.login.username = this.decrypt(cipher.login.username, key);
+          ret.data.username = ret.login.username;
+          ret.login.password = this.decrypt(cipher.login.password, key);
+          ret.data.password = ret.login.password;
+          ret.login.uri = this.decrypt(cipher.login.uri, key);
+          ret.data.uri = ret.login.uri;
+          if (cipher.login.uris?.length) {
+            ret.login.uris = cipher.login.uris?.map((uri) => ({
+              uri: this.decrypt(uri.uri, key),
+              uriChecksum: uri.uriChecksum,
+            }));
+            ret.data.uris = ret.login.uris;
+          }
+        }
+        if (cipher.identity) {
+          ret.identity = {
+            address1:
+              cipher.identity.address1 &&
+              this.decrypt(cipher.identity.address1, key),
+            address2:
+              cipher.identity.address2 &&
+              this.decrypt(cipher.identity.address2, key),
+            address3:
+              cipher.identity.address3 &&
+              this.decrypt(cipher.identity.address3, key),
+            city:
+              cipher.identity.city && this.decrypt(cipher.identity.city, key),
+            company:
+              cipher.identity.company &&
+              this.decrypt(cipher.identity.company, key),
+            country:
+              cipher.identity.country &&
+              this.decrypt(cipher.identity.country, key),
+            email:
+              cipher.identity.email && this.decrypt(cipher.identity.email, key),
+            firstName:
+              cipher.identity.firstName &&
+              this.decrypt(cipher.identity.firstName, key),
+            lastName:
+              cipher.identity.lastName &&
+              this.decrypt(cipher.identity.lastName, key),
+            licenseNumber:
+              cipher.identity.licenseNumber &&
+              this.decrypt(cipher.identity.licenseNumber, key),
+            middleName:
+              cipher.identity.middleName &&
+              this.decrypt(cipher.identity.middleName, key),
+            passportNumber:
+              cipher.identity.passportNumber &&
+              this.decrypt(cipher.identity.passportNumber, key),
+            phone:
+              cipher.identity.phone && this.decrypt(cipher.identity.phone, key),
+            postalCode:
+              cipher.identity.postalCode &&
+              this.decrypt(cipher.identity.postalCode, key),
+            ssn: cipher.identity.ssn && this.decrypt(cipher.identity.ssn, key),
+            state:
+              cipher.identity.state && this.decrypt(cipher.identity.state, key),
+            title:
+              cipher.identity.title && this.decrypt(cipher.identity.title, key),
+            username:
+              cipher.identity.username &&
+              this.decrypt(cipher.identity.username, key),
+          };
+        }
+        if (cipher.sshKey) {
+          ret.sshKey = {
+            keyFingerprint:
+              cipher.sshKey.keyFingerprint &&
+              this.decrypt(cipher.sshKey.keyFingerprint, key),
+            privateKey:
+              cipher.sshKey.privateKey &&
+              this.decrypt(cipher.sshKey.privateKey, key),
+            publicKey:
+              cipher.sshKey.publicKey &&
+              this.decrypt(cipher.sshKey.publicKey, key),
+          };
+        }
+        if (ret.fields?.length) {
+          ret.fields = cipher.fields?.map((field: any) => {
+            return {
+              ...field,
+              name: this.decrypt(field.name, key),
+              value: this.decrypt(field.value, key),
+            };
+          });
+          ret.data.fields = ret.fields;
+        }
+
+        return ret;
+      }),
+    };
+
+    return this.decryptedSyncCache;
+  }
+
+  async getSecretByName(name: string, { decrypted = true } = {}) {
+    const ret = [];
+    const sync = await this.getDecryptedSync();
+    for (let i = 0; i < sync.ciphers.length; i++) {
+      const cipher = sync.ciphers[i];
+      if (cipher?.name === name) {
+        ret.push(decrypted ? cipher : this.syncCache!.ciphers[i]);
+      }
+    }
+    return ret;
+  }
+
+  async getSecretById(id: string, { decrypted = true } = {}) {
+    const sync = await this.getDecryptedSync();
+    for (let i = 0; i < sync.ciphers.length; i++) {
+      const cipher = sync.ciphers[i];
+      if (cipher?.id === id) {
+        return decrypted ? cipher : this.syncCache!.ciphers[i];
+      }
+    }
+    return undefined;
+  }
+
+  async createSecret(obj: CipherDto) {
+    const key = this.getDecryptionKey(obj);
+    const s = await fetch(
+      `${this.apiUrl}/ciphers`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+      },
+
+      this.encryptCipher(obj, key)
+    );
+    return s.json();
+  }
+
+  objectDiff(obj1: any, obj2: any): any {
+    if (
+      typeof obj1 !== "object" ||
+      obj1 === null ||
+      typeof obj2 !== "object" ||
+      obj2 === null
+    ) {
+      return obj1 !== obj2 ? obj2 : undefined;
+    }
+
+    let diff: any = Array.isArray(obj2) ? [] : {};
+
+    let changed = false;
+    for (const key in obj2) {
+      if (!(key in obj1)) {
+        diff[key] = obj2[key];
+        changed = true;
+      } else {
+        const subDiff = this.objectDiff(obj1[key], obj2[key]);
+        if (subDiff !== undefined) {
+          diff[key] = subDiff;
+          changed = true;
+        }
+      }
+    }
+
+    return changed ? diff : undefined;
+  }
+
+  async updateSecret(id: string, patch: Partial<CipherDto>) {
+    await this.getDecryptedSync();
+    const original = this.syncCache?.ciphers.find((c) => c.id === id);
+    const decrypted = this.decryptedSyncCache?.ciphers.find((c) => c.id === id);
+    if (!original || !decrypted) {
+      throw new Error("Secret not found in cache. Please sync first.");
+    }
+    const obj = this.objectDiff(decrypted, patch);
+    if (!obj) return null;
+    const key = this.getDecryptionKey(patch);
+    const data = this.patchObject(original, this.encryptCipher(obj, key));
+    const s = await fetch(
+      `${this.apiUrl}/ciphers/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+      },
+      data
+    );
+    this.decryptedSyncCache = null;
+    this.syncCache = null;
+    return s.json();
+  }
+
+  encrypt(value: string | null, key?: any): string {
+    if (!value) return value!;
+    const enc = mcbw.encrypt(value, key ?? this.keys.userKey);
+    return enc;
+  }
+
+  decrypt(value: string | null | undefined, key?: any) {
+    if (!value) return value;
+    return mcbw.decrypt(value, key ?? this.keys.userKey);
+  }
+
+  encryptCipher(obj: Partial<CipherDto>, key?: any) {
+    const { ...ret } = obj;
+    delete (obj as any).data;
+    if (ret.name) {
+      ret.name = this.encrypt(ret.name, key);
+    }
+    if (ret.notes) {
+      ret.notes = this.encrypt(ret.notes, key);
+    }
+    if (ret.fields?.length) {
+      ret.fields = ret.fields.map((field: any) => {
+        return {
+          ...field,
+          name: this.encrypt(field.name, key),
+          value: this.encrypt(field.value, key),
+        };
+      });
+    }
+    if (ret.identity) {
+      ret.identity = {
+        address1: ret.identity.address1
+          ? this.encrypt(ret.identity.address1, key)
+          : ret.identity.address1,
+        address2: ret.identity.address2
+          ? this.encrypt(ret.identity.address2, key)
+          : ret.identity.address2,
+        address3: ret.identity.address3
+          ? this.encrypt(ret.identity.address3, key)
+          : ret.identity.address3,
+        city: ret.identity.city
+          ? this.encrypt(ret.identity.city, key)
+          : ret.identity.city,
+        company: ret.identity.company
+          ? this.encrypt(ret.identity.company, key)
+          : ret.identity.company,
+        country: ret.identity.country
+          ? this.encrypt(ret.identity.country, key)
+          : ret.identity.country,
+        email: ret.identity.email
+          ? this.encrypt(ret.identity.email, key)
+          : ret.identity.email,
+        firstName: ret.identity.firstName
+          ? this.encrypt(ret.identity.firstName, key)
+          : ret.identity.firstName,
+        lastName: ret.identity.lastName
+          ? this.encrypt(ret.identity.lastName, key)
+          : ret.identity.lastName,
+        licenseNumber: ret.identity.licenseNumber
+          ? this.encrypt(ret.identity.licenseNumber, key)
+          : ret.identity.licenseNumber,
+        middleName: ret.identity.middleName
+          ? this.encrypt(ret.identity.middleName, key)
+          : ret.identity.middleName,
+        passportNumber: ret.identity.passportNumber
+          ? this.encrypt(ret.identity.passportNumber, key)
+          : ret.identity.passportNumber,
+        phone: ret.identity.phone
+          ? this.encrypt(ret.identity.phone, key)
+          : ret.identity.phone,
+        postalCode: ret.identity.postalCode
+          ? this.encrypt(ret.identity.postalCode, key)
+          : ret.identity.postalCode,
+        ssn: ret.identity.ssn
+          ? this.encrypt(ret.identity.ssn, key)
+          : ret.identity.ssn,
+        state: ret.identity.state
+          ? this.encrypt(ret.identity.state, key)
+          : ret.identity.state,
+        title: ret.identity.title
+          ? this.encrypt(ret.identity.title, key)
+          : ret.identity.title,
+        username: ret.identity.username
+          ? this.encrypt(ret.identity.username, key)
+          : ret.identity.username,
+      };
+    }
+    if (ret.login) {
+      ret.login = {
+        ...ret.login,
+        username: ret.login.username
+          ? this.encrypt(ret.login.username, key)
+          : ret.login.username,
+        password: ret.login.password
+          ? this.encrypt(ret.login.password, key)
+          : ret.login.password,
+        uri: ret.login.uri ? this.encrypt(ret.login.uri, key) : ret.login.uri,
+        uris: ret.login.uris?.map((uri) => ({
+          uri: uri.uri ? this.encrypt(uri.uri, key) : uri.uri,
+        })),
+      };
+    }
+    return ret;
+  }
+}

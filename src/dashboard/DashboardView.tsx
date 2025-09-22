@@ -6,7 +6,7 @@ import { CipherDetail } from "./components/CipherDetail.js";
 import { HelpBar } from "./components/HelpBar.js";
 import { primary } from "../theme/style.js";
 import { bwClient, clearConfig, emptyCipher, useBwSync } from "../hooks/bw.js";
-import { Cipher, SyncResponse } from "mcbw";
+import { Cipher, SyncResponse } from "../clients/bw.js";
 import { useStatusMessage } from "../hooks/status-message.js";
 
 type Props = {
