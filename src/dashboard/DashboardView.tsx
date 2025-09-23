@@ -17,7 +17,7 @@ type FocusableComponent = "list" | "search" | "detail";
 type DetailViewMode = "view" | "new";
 
 export function DashboardView({ onLogout }: Props) {
-  const { sync, fetchSync } = useBwSync();
+  const { sync, error, fetchSync } = useBwSync();
   const [syncState, setSyncState] = useState<SyncResponse | null>(sync);
   const [searchQuery, setSearchQuery] = useState("");
   const [listIndex, setListIndex] = useState(0);
@@ -51,6 +51,11 @@ export function DashboardView({ onLogout }: Props) {
   const selectedCipher =
     detailMode === "new" ? editedCipher : filteredCiphers[listIndex];
 
+  const logout = async () => {
+    await clearConfig();
+    onLogout();
+  };
+
   useEffect(() => {
     setListIndex(0);
   }, [searchQuery]);
@@ -63,10 +68,13 @@ export function DashboardView({ onLogout }: Props) {
     if (focusedComponent === "detail") focusNext();
   }, [focusedComponent]);
 
+  useEffect(() => {
+    if (error) showStatusMessage(error, "error");
+  }, [error]);
+
   useInput(async (input, key) => {
     if (key.ctrl && input === "w") {
-      await clearConfig();
-      onLogout();
+      await logout();
       return;
     }
 

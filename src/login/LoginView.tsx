@@ -5,6 +5,7 @@ import { Button } from "../components/Button.js";
 import { primary } from "../theme/style.js";
 import { bwClient, loadConfig, saveConfig } from "../hooks/bw.js";
 import { useStatusMessage } from "../hooks/status-message.js";
+import { Checkbox } from "../components/Checkbox.js";
 
 type Props = {
   onLogin: () => void;
@@ -26,6 +27,7 @@ export function LoginView({ onLogin }: Props) {
   const [url, setUrl] = useState("https://vault.bitwarden.eu");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const { stdout } = useStdout();
   const { focusNext } = useFocusManager();
   const { statusMessage, statusMessageColor, showStatusMessage } =
@@ -47,11 +49,13 @@ export function LoginView({ onLogin }: Props) {
         throw new Error("Missing URL or keys after login");
 
       onLogin();
-      saveConfig({
-        baseUrl: url?.trim().length ? url.trim() : undefined,
-        keys: bwClient.keys,
-        refreshToken: bwClient.refreshToken,
-      });
+      if (rememberMe) {
+        saveConfig({
+          baseUrl: url?.trim().length ? url.trim() : undefined,
+          keys: bwClient.keys,
+          refreshToken: bwClient.refreshToken,
+        });
+      }
     } catch (e) {
       showStatusMessage(
         "Login failed, please check your credentials.",
@@ -110,7 +114,17 @@ export function LoginView({ onLogin }: Props) {
             }}
             isPassword
           />
-          <Button onClick={handleLogin}>Log In</Button>
+          <Box>
+            <Checkbox
+              label="Remember me (less secure)"
+              value={rememberMe}
+              width="50%"
+              onToggle={setRememberMe}
+            />
+            <Button width="50%" onClick={handleLogin}>
+              Log In
+            </Button>
+          </Box>
           {statusMessage && (
             <Box marginTop={1} width="100%" justifyContent="center">
               <Text color={statusMessageColor}>{statusMessage}</Text>

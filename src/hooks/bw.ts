@@ -11,7 +11,7 @@ interface BwConfig {
 }
 
 export const bwClient = new Client();
-const configPath = path.join(os.homedir(), ".config", "bwtui", "config.json");
+const configPath = path.join(os.homedir(), ".config", "bitty", "config.json");
 
 export async function loadConfig() {
   try {
@@ -95,14 +95,20 @@ export async function clearConfig() {
 
 export const useBwSync = () => {
   const [sync, setSync] = useState<SyncResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fetchSync = useCallback(async (forceRefresh = true) => {
-    const sync = await bwClient.getDecryptedSync({ forceRefresh });
-    setSync(sync);
+    try {
+      setError(null);
+      const sync = await bwClient.getDecryptedSync({ forceRefresh });
+      setSync(sync);
+    } catch (e) {
+      setError("Error fetching sync data");
+    }
   }, []);
   useEffect(() => {
     fetchSync();
   }, [fetchSync]);
-  return { sync, fetchSync };
+  return { sync, error, fetchSync };
 };
 
 export const emptyCipher: any = {

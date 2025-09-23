@@ -15,6 +15,8 @@ Bitwarden compatible TUI for your terminal.
 
 Works also with Vaultwarden.
 
+If you check "Remember me" during login, your vault encryption keys will be stored in plain text in your home folder (`$HOME/.config/bitty/config.json`). Use this option only if you are the only user of your machine.
+
 ## Acknowledgments
 
 - [Bitwarden](https://github.com/bitwarden)
