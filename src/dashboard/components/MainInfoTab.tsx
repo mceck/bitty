@@ -2,6 +2,8 @@ import { Box, Text } from "ink";
 import { Cipher, CipherType } from "../../clients/bw.js";
 import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
+import { useEffect, useState } from "react";
+import { authenticator } from "otplib";
 
 export function MainTab({
   isFocused,
@@ -12,6 +14,28 @@ export function MainTab({
   selectedCipher: Cipher;
   onChange: (cipher: Cipher) => void;
 }) {
+  const [otpCode, setOtpCode] = useState("");
+  const [otpTimeout, setOtpTimeout] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (selectedCipher?.login?.totp) {
+      interval = setInterval(() => {
+        setOtpTimeout((t) => {
+          if (t <= 1) {
+            setOtpCode(authenticator.generate(selectedCipher.login!.totp!));
+            return 30;
+          }
+          return t - 1;
+        });
+      }, 1000);
+    } else {
+      setOtpCode("");
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [selectedCipher?.login?.totp]);
   return (
     <Box flexDirection="column" gap={1}>
       <Box flexDirection="row">
@@ -55,26 +79,40 @@ export function MainTab({
 
       {selectedCipher.type === CipherType.Login && (
         <Box flexDirection="row">
-          <Box width={12} marginRight={2} flexShrink={0}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
-              Password:
-            </Text>
+          <Box flexDirection="row" flexGrow={1}>
+            <Box width={12} marginRight={2} flexShrink={0}>
+              <Text bold color={isFocused ? primaryLight : "gray"}>
+                Password:
+              </Text>
+            </Box>
+            <Box flexGrow={1} paddingLeft={1}>
+              <TextInput
+                inline
+                isPassword
+                showPasswordOnFocus
+                isActive={isFocused}
+                value={selectedCipher.login?.password ?? ""}
+                onChange={(value) =>
+                  onChange({
+                    ...selectedCipher,
+                    login: { ...selectedCipher.login, password: value },
+                  })
+                }
+              />
+            </Box>
           </Box>
-          <Box flexGrow={1} paddingLeft={1}>
-            <TextInput
-              inline
-              isPassword
-              showPasswordOnFocus
-              isActive={isFocused}
-              value={selectedCipher.login?.password ?? ""}
-              onChange={(value) =>
-                onChange({
-                  ...selectedCipher,
-                  login: { ...selectedCipher.login, password: value },
-                })
-              }
-            />
-          </Box>
+          {selectedCipher.login?.totp && (
+            <Box flexDirection="row" flexGrow={1}>
+              <Box marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  OTP ({otpTimeout.toString().padStart(2, "0")}s):
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput inline isActive={isFocused} value={otpCode} />
+              </Box>
+            </Box>
+          )}
         </Box>
       )}
 

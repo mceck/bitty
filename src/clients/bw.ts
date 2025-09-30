@@ -103,6 +103,7 @@ export interface Cipher {
     }[];
     username?: string;
     password?: string;
+    totp?: string | null;
   };
   identity?: {
     address1: string | null;
@@ -484,9 +485,12 @@ export class Client {
         "bitwarden-client-version": "2025.9.0",
       },
     }).then((r) => r.json());
+    this.decryptOrgKeys();
+    return this.syncCache;
+  }
 
-    if (!this.keys.privateKey) return this.syncCache;
-
+  decryptOrgKeys() {
+    if (!this.keys.privateKey) return;
     for (const org of this.syncCache?.profile?.organizations || []) {
       if (org.id in this.orgKeys) continue;
       this.orgKeys[org.id] = {
@@ -494,7 +498,6 @@ export class Client {
         mac: new Uint8Array(),
       };
     }
-    return this.syncCache;
   }
 
   getDecryptionKey(cipher: Partial<Cipher>) {
@@ -529,6 +532,8 @@ export class Client {
           ret.data.username = ret.login.username;
           ret.login.password = this.decrypt(cipher.login.password, key);
           ret.data.password = ret.login.password;
+          ret.login.totp = this.decrypt(cipher.login.totp, key);
+          ret.data.totp = ret.login.totp;
           ret.login.uri = this.decrypt(cipher.login.uri, key);
           ret.data.uri = ret.login.uri;
           if (cipher.login.uris?.length) {
