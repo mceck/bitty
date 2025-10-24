@@ -1,3 +1,23 @@
+/**
+ * Bitwarden client for Node.js
+ * This client provides methods to interact with the Bitwarden API and decrypt/encrypt the ciphers.
+ *
+ * Authentication flow:
+ * 1. Prelogin API to get KDF iterations
+ * 2. Derive master key using email, password and KDF iterations
+ * 3. Get token API using derived password hash
+ * 4. Decode user and private keys
+ *
+ * Cipher decryption:
+ * 1. Fetch sync data from Bitwarden API
+ * 2. Decrypt organization keys using private key
+ * 3. Choose the appropriate decryption key:
+ *  - User key for personal ciphers
+ *  - Organization key for org ciphers
+ *  - Cipher-specific key if available
+ * 4. Decrypt cipher fields using the chosen key
+ */
+
 import https from "node:https";
 import crypto from "node:crypto";
 
@@ -164,6 +184,17 @@ export interface BwKeys {
 }
 
 class Bw {
+  /**
+   * Derives the master key and related keys from the user's email and password.
+   *
+   * First, it derives the master key using PBKDF2 (Argon2 should be implemented in the future).
+   * The master key is derived from the password using the email as the salt and the specified number of iterations.
+   * The master password hash is then derived from the master key using the password as the salt with a single iteration of PBKDF2.
+   *
+   * The master password hash will be used for authentication.
+   * The master key is used to derive the encryption and MAC keys using HKDF with SHA-256.
+   * The encryption key will be used to decrypt the user keys.
+   */
   deriveMasterKey(
     email: string,
     password: string,
@@ -185,6 +216,12 @@ class Bw {
       },
     };
   }
+
+  /**
+   * Decode the user key and private key.
+   * The user key is decrypted using the encryption key.
+   * The private key is decrypted using the user key.
+   */
   decodeUserKeys(userKey: string, privateKey: string | null, keys: BwKeys) {
     if (!keys.encryptionKey) throw new Error("Encryption key not derived yet");
     const userKeyDecrypted = this.decryptKey(userKey, keys.encryptionKey);
@@ -202,6 +239,13 @@ class Bw {
     }
     return keys;
   }
+
+  /**
+   * Decrypt a Bitwarden-formatted string using the provided key.
+   * The function first parses the string to extract the type, IV, ciphertext, and HMAC.
+   * It then selects the appropriate decryption method based on the type.
+   * Supported types: AES-256(0), AES-256-MAC(2), AES-128-MAC(1), RSA-SHA1(4), RSA-SHA256(3), RSA-SHA1-MAC(6), and RSA-SHA256-MAC(5).
+   */
   decryptKey(value: string, key: Key) {
     const data = this.parseBwString(value);
 
@@ -225,10 +269,13 @@ class Bw {
       throw error;
     }
   }
+
+  // Decrypt as UTF-8 string
   decrypt(value: string, key: Key) {
     return this.decryptKey(value, key).toString("utf-8");
   }
 
+  // Encrypt a string using the given key
   encrypt(value: string, key: Key) {
     if (!value || !key?.key) {
       throw new Error("Missing value or key for encryption");
@@ -269,6 +316,7 @@ class Bw {
     return `2.${ivB64}|${encryptedB64}|${macB64}`;
   }
 
+  // PBKDF2 key derivation
   derivePbkdf2(
     password: crypto.BinaryLike,
     salt: crypto.BinaryLike,
@@ -282,6 +330,26 @@ class Bw {
     mac.update(Buffer.from([0x01]));
     return mac.digest();
   }
+
+  /**
+   * Parse a Bitwarden-formatted string into its components.
+   * The function extracts the type, IV, ciphertext, and HMAC from the string.
+   * The bitwarden string format is as follows:
+   * A type (1 character) followed by a dot ('.'), then key parts separated by pipes ('|')
+   * <type>.[<iv_base64>|]<ciphertext_base64>|<hmac_base64>
+   *
+   * AES types (0, 1, 2) include the IV, while RSA types (3, 4, 5, 6) do not.
+   *
+   * Examples:
+   *   - 0.MTIzNDU2Nzg5MGFiY2RlZg==|c29tZWNpcGhlcnRleHQ=|aG1hY3ZhbHVl
+   *   - 3.c29tZWNpcGhlcnRleHQ=|aG1hY3ZhbHVl
+   *
+   *   type   iv_base64                    ciphertext_base64        hmac_base64
+   *   -------------------------------------------------------------------------
+   *   0.     MTIzNDU2Nzg5MGFiY2RlZg==  |  c29tZWNpcGhlcnRleHQ=  |  aG1hY3ZhbHVl
+   *   3.                                  c29tZWNpcGhlcnRleHQ=  |  aG1hY3ZhbHVl
+   *
+   */
   parseBwString(value: string): Key {
     if (!value?.length) {
       throw new Error("Empty value");
@@ -306,6 +374,7 @@ class Bw {
     return { type, iv, key: ciphertext, mac: hmac! };
   }
 
+  // AES decryption
   decryptAes(ciphertext: Key, key: Key, algorithm: string) {
     if (!ciphertext.iv) throw new Error("Missing IV for AES decryption");
     if (!key.key || !key.key.length) return Buffer.from("");
@@ -329,6 +398,7 @@ class Bw {
     return Buffer.concat([decrypted, final]);
   }
 
+  // RSA OAEP decryption
   decryptRsaOaep(ciphertext: Key, key: Key, hashAlgorithm: string): Buffer {
     const privateKey = crypto.createPrivateKey({
       key: Buffer.from(key.key),
@@ -408,6 +478,20 @@ export class Client {
     }
   }
 
+  /**
+   * Authenticates a user with the Bitwarden server using their email and password.
+   * The login process involves three main steps:
+   * 1. Prelogin request to get KDF iterations
+   * 2. Master key derivation using email, password and KDF iterations (see Bw.deriveMasterKey)
+   * 3. Token acquisition using derived credentials
+   * 4. User and private key decryption (see Bw.decodeUserKeys)
+   *
+   * After successful authentication, it sets up the client with:
+   * - Access token for API requests
+   * - Refresh token for token renewal
+   * - Token expiration timestamp
+   * - Derived encryption keys (master key, user key, private key)
+   */
   async login(email: string, password: string): Promise<void> {
     const prelogin = await fetch(
       `${this.identityUrl}/accounts/prelogin`,
@@ -454,6 +538,7 @@ export class Client {
     this.orgKeys = {};
   }
 
+  // Check and refresh token if needed
   async checkToken() {
     if (!this.tokenExpiration || Date.now() >= this.tokenExpiration) {
       if (!this.refreshToken) {
@@ -476,6 +561,11 @@ export class Client {
     }
   }
 
+  /**
+   * Fetches the latest sync data from the Bitwarden server and decrypts organization keys if available.
+   * The orgKeys are decrypted using the private key derived during login.
+   * The sync data is cached for future use.
+   */
   async syncRefresh() {
     await this.checkToken();
     this.syncCache = await fetch(`${this.apiUrl}/sync?excludeDomains=true`, {
@@ -500,6 +590,12 @@ export class Client {
     }
   }
 
+  /**
+   * Get the appropriate decryption key for a given cipher.
+   * If the cipher belongs to an organization, return the organization's key.
+   * If the cipher has its own custom key, the custom key is decrypted using the appropriate key and returned.
+   * Otherwise, it uses the user's key.
+   */
   getDecryptionKey(cipher: Partial<Cipher>) {
     let key = this.keys.userKey;
     if (cipher.organizationId) {
@@ -511,6 +607,7 @@ export class Client {
     return key;
   }
 
+  // fetch and decrypt the bw sync data
   async getDecryptedSync({ forceRefresh = false } = {}) {
     if (this.decryptedSyncCache && !forceRefresh) {
       return this.decryptedSyncCache;

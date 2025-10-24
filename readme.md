@@ -17,6 +17,13 @@ Works also with Vaultwarden.
 
 If you check "Remember me" during login, your vault encryption keys will be stored in plain text in your home folder (`$HOME/.config/bitty/config.json`). Use this option only if you are the only user of your machine.
 
+## TODO
+
+- Implement Argon2 key derivation
+- Collections support
+- Handle more fields editing
+- Handle creating different cipher types
+
 ## Acknowledgments
 
 - [Bitwarden](https://github.com/bitwarden)
