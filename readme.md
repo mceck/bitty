@@ -19,8 +19,8 @@ If you check "Remember me" during login, your vault encryption keys will be stor
 
 ## TODO
 
-- Implement Argon2 key derivation
 - Collections support
+- Implement Fido, Duo MFA support
 - Handle more fields editing
 - Handle creating different cipher types
 
