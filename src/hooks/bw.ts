@@ -102,6 +102,7 @@ export const useBwSync = () => {
       const sync = await bwClient.getDecryptedSync({ forceRefresh });
       setSync(sync);
     } catch (e) {
+      console.error("Error fetching sync data:", e);
       setError("Error fetching sync data");
     }
   }, []);

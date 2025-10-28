@@ -20,7 +20,7 @@ export function DashboardView({ onLogout }: Props) {
   const { sync, error, fetchSync } = useBwSync();
   const [syncState, setSyncState] = useState<SyncResponse | null>(sync);
   const [searchQuery, setSearchQuery] = useState("");
-  const [listIndex, setListIndex] = useState(0);
+  const [listSelected, setListSelected] = useState<Cipher | null>(null);
   const [showDetails, setShowDetails] = useState(true);
   const [focusedComponent, setFocusedComponent] =
     useState<FocusableComponent>("list");
@@ -30,7 +30,6 @@ export function DashboardView({ onLogout }: Props) {
   const { stdout } = useStdout();
   const { statusMessage, statusMessageColor, showStatusMessage } =
     useStatusMessage();
-
   const filteredCiphers = useMemo(() => {
     return (
       syncState?.ciphers.filter((c) => {
@@ -47,6 +46,10 @@ export function DashboardView({ onLogout }: Props) {
       }) ?? []
     ).sort((a, b) => a.name.localeCompare(b.name));
   }, [syncState, searchQuery]);
+  const listIndex = useMemo(() => {
+    if (!listSelected) return 0;
+    return filteredCiphers.findIndex((c) => c.id === listSelected.id);
+  }, [listSelected, filteredCiphers]);
 
   const selectedCipher =
     detailMode === "new" ? editedCipher : filteredCiphers[listIndex];
@@ -57,7 +60,7 @@ export function DashboardView({ onLogout }: Props) {
   };
 
   useEffect(() => {
-    setListIndex(0);
+    setListSelected(null);
   }, [searchQuery]);
 
   useEffect(() => {
@@ -159,7 +162,7 @@ export function DashboardView({ onLogout }: Props) {
           filteredCiphers={filteredCiphers}
           isFocused={focusedComponent === "list"}
           selected={listIndex}
-          onSelect={(index) => setListIndex(index)}
+          onSelect={(index) => setListSelected(filteredCiphers[index] || null)}
         />
 
         <CipherDetail

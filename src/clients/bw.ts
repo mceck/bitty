@@ -20,8 +20,10 @@
 
 import https from "node:https";
 import crypto from "node:crypto";
+import * as argon2 from "argon2";
 
 interface FetchResponse {
+  status: number | undefined;
   json: () => Promise<any>;
   text: () => Promise<string>;
 }
@@ -54,6 +56,7 @@ function fetch(
           return;
         }
         resolve({
+          status: res.statusCode,
           json: () => Promise.resolve(JSON.parse(data)),
           text: () => Promise.resolve(data),
         });
@@ -155,6 +158,11 @@ export interface Cipher {
 
 export type CipherDto = Omit<Cipher, "id" | "data">;
 
+export enum KdfType {
+  PBKDF2 = 0,
+  Argon2id = 1,
+}
+
 export interface SyncResponse {
   ciphers: Cipher[];
   profile?: {
@@ -195,12 +203,28 @@ class Bw {
    * The master key is used to derive the encryption and MAC keys using HKDF with SHA-256.
    * The encryption key will be used to decrypt the user keys.
    */
-  deriveMasterKey(
+  async deriveMasterKey(
     email: string,
     password: string,
-    kdfIterations: number
-  ): BwKeys {
-    const masterKey = this.derivePbkdf2(password, email, kdfIterations);
+    prelogin: {
+      kdf: KdfType;
+      kdfIterations: number;
+      kdfMemory?: number;
+      kdfParallelism?: number;
+    }
+  ): Promise<BwKeys> {
+    let masterKey: Uint8Array;
+    if (prelogin.kdf === KdfType.PBKDF2) {
+      masterKey = this.derivePbkdf2(password, email, prelogin.kdfIterations);
+    } else {
+      masterKey = await this.deriveArgon2(
+        password,
+        email,
+        prelogin.kdfIterations,
+        prelogin.kdfMemory!,
+        prelogin.kdfParallelism!
+      );
+    }
     const masterPasswordHashBytes = this.derivePbkdf2(masterKey, password, 1);
     const masterPasswordHash = Buffer.from(masterPasswordHashBytes).toString(
       "base64"
@@ -266,6 +290,7 @@ class Bw {
           throw new Error(`Unknown key type: ${data.type}`);
       }
     } catch (error) {
+      console.error("Error decrypting key:", error);
       throw error;
     }
   }
@@ -324,6 +349,32 @@ class Bw {
   ) {
     return crypto.pbkdf2Sync(password, salt, iterations, 32, "sha256");
   }
+
+  // Argon2 key derivation
+  async deriveArgon2(
+    password: crypto.BinaryLike,
+    salt: crypto.BinaryLike,
+    iterations: number,
+    memory: number,
+    parallelism: number
+  ) {
+    const saltHash = crypto
+      .createHash("sha256")
+      .update(Buffer.from(salt.toString(), "utf-8"))
+      .digest();
+
+    const hash = await argon2.hash(password.toString(), {
+      salt: saltHash,
+      timeCost: iterations,
+      memoryCost: memory * 1024,
+      parallelism,
+      hashLength: 32,
+      type: argon2.argon2id,
+      raw: true,
+    });
+    return Buffer.from(hash);
+  }
+
   hkdfExpandSha256(ikm: Uint8Array, info: string) {
     const mac = crypto.createHmac("sha256", ikm);
     mac.update(info);
@@ -505,8 +556,7 @@ export class Client {
         email,
       }
     ).then((r) => r.json());
-
-    const keys = mcbw.deriveMasterKey(email, password, prelogin.kdfIterations);
+    const keys = await mcbw.deriveMasterKey(email, password, prelogin);
 
     const identityReq = await fetch(
       `${this.identityUrl}/connect/token`,
@@ -621,24 +671,17 @@ export class Client {
         const key = this.getDecryptionKey(cipher);
         const ret = JSON.parse(JSON.stringify(cipher));
         ret.name = this.decrypt(cipher.name, key);
-        ret.data.name = ret.name;
         ret.notes = this.decrypt(cipher.notes, key);
-        ret.data.notes = ret.notes;
         if (cipher.login) {
           ret.login.username = this.decrypt(cipher.login.username, key);
-          ret.data.username = ret.login.username;
           ret.login.password = this.decrypt(cipher.login.password, key);
-          ret.data.password = ret.login.password;
           ret.login.totp = this.decrypt(cipher.login.totp, key);
-          ret.data.totp = ret.login.totp;
           ret.login.uri = this.decrypt(cipher.login.uri, key);
-          ret.data.uri = ret.login.uri;
           if (cipher.login.uris?.length) {
             ret.login.uris = cipher.login.uris?.map((uri) => ({
               uri: this.decrypt(uri.uri, key),
               uriChecksum: uri.uriChecksum,
             }));
-            ret.data.uris = ret.login.uris;
           }
         }
         if (cipher.identity) {
@@ -713,7 +756,6 @@ export class Client {
               value: this.decrypt(field.value, key),
             };
           });
-          ret.data.fields = ret.fields;
         }
 
         return ret;
@@ -803,6 +845,7 @@ export class Client {
     if (!obj) return null;
     const key = this.getDecryptionKey(patch);
     const data = this.patchObject(original, this.encryptCipher(obj, key));
+    (data as any).data = undefined;
     const s = await fetch(
       `${this.apiUrl}/ciphers/${id}`,
       {
@@ -832,7 +875,6 @@ export class Client {
 
   encryptCipher(obj: Partial<CipherDto>, key?: any) {
     const { ...ret } = obj;
-    delete (obj as any).data;
     if (ret.name) {
       ret.name = this.encrypt(ret.name, key);
     }
