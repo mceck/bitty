@@ -5,6 +5,7 @@ import { primary } from "../theme/style.js";
 type Props = {
   isActive?: boolean;
   doubleConfirm?: boolean;
+  autoFocus?: boolean;
   onClick: () => void;
   children: ReactNode;
 } & React.ComponentProps<typeof Box>;
@@ -14,9 +15,10 @@ export const Button = ({
   doubleConfirm,
   onClick,
   children,
+  autoFocus = false,
   ...props
 }: Props) => {
-  const { isFocused } = useFocus();
+  const { isFocused } = useFocus({ autoFocus: autoFocus });
   const [askConfirm, setAskConfirm] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 

@@ -28,6 +28,20 @@ interface FetchResponse {
   text: () => Promise<string>;
 }
 
+export class FetchError extends Error {
+  status: number;
+  data: string;
+  constructor(status: number, data: string, message?: string) {
+    super(message ?? `FetchError: ${status} ${data}`);
+    this.status = status;
+    this.data = data;
+  }
+
+  json(): any {
+    return JSON.parse(this.data);
+  }
+}
+
 function fetch(
   url: string,
   options: { method?: string; headers?: Record<string, string> } = {},
@@ -50,8 +64,13 @@ function fetch(
       const onEnd = () => {
         cleanup();
         if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+          console.error("HTTP error body:", data);
           reject(
-            new Error(`HTTP error: ${res.statusCode} ${res.statusMessage}`)
+            new FetchError(
+              res.statusCode,
+              data,
+              `HTTP error: ${res.statusCode} ${res.statusMessage}`
+            )
           );
           return;
         }
@@ -105,6 +124,14 @@ export enum KeyType {
   RSA_SHA256_MAC = "5",
   RSA_SHA1_MAC = "6",
 }
+
+export const TwoFactorProvider: Record<string, string> = {
+  "0": "Authenticator",
+  "1": "Email",
+  "2": "Fido2",
+  "3": "Yubikey",
+  "4": "Duo",
+};
 
 export interface Cipher {
   id: string;
@@ -191,6 +218,7 @@ export interface BwKeys {
   privateKey?: Key;
 }
 
+const DEVICE_IDENTIFIER = "928f9664-5559-4a7b-9853-caf5bfa5dd57";
 class Bw {
   /**
    * Derives the master key and related keys from the user's email and password.
@@ -543,21 +571,42 @@ export class Client {
    * - Token expiration timestamp
    * - Derived encryption keys (master key, user key, private key)
    */
-  async login(email: string, password: string): Promise<void> {
-    const prelogin = await fetch(
-      `${this.identityUrl}/accounts/prelogin`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+  async login(
+    email: string,
+    password: string,
+    skipPrelogin: boolean = false,
+    opts?: Record<string, any>
+  ): Promise<void> {
+    let keys = this.keys;
+    if (!skipPrelogin) {
+      const prelogin = await fetch(
+        `${this.identityUrl}/accounts/prelogin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      },
-      {
-        email,
-      }
-    ).then((r) => r.json());
-    const keys = await mcbw.deriveMasterKey(email, password, prelogin);
+        {
+          email,
+        }
+      ).then((r) => r.json());
+      keys = await mcbw.deriveMasterKey(email, password, prelogin);
+      this.keys = keys;
+    }
 
+    const bodyParams = new URLSearchParams();
+    bodyParams.append("username", email);
+    bodyParams.append("password", keys.masterPasswordHash!);
+    bodyParams.append("grant_type", "password");
+    bodyParams.append("deviceName", "chrome");
+    bodyParams.append("deviceType", "9");
+    bodyParams.append("deviceIdentifier", DEVICE_IDENTIFIER);
+    bodyParams.append("client_id", "web");
+    bodyParams.append("scope", "api offline_access");
+    for (const [key, value] of Object.entries(opts || {})) {
+      bodyParams.append(key, value);
+    }
     const identityReq = await fetch(
       `${this.identityUrl}/connect/token`,
       {
@@ -566,7 +615,7 @@ export class Client {
           "Content-Type": "application/x-www-form-urlencoded",
         },
       },
-      `username=${email}&password=${keys.masterPasswordHash}&grant_type=password&deviceName=chrome&deviceType=9&deviceIdentifier=928f9664-5559-4a7b-9853-caf5bfa5dd57&client_id=web&scope=api%20offline_access`
+      bodyParams.toString()
     ).then((r) => r.json());
 
     this.token = identityReq.access_token;
@@ -586,6 +635,26 @@ export class Client {
     this.syncCache = null;
     this.decryptedSyncCache = null;
     this.orgKeys = {};
+  }
+
+  async sendEmailMfaCode(email: string) {
+    fetch(
+      "https://vault.bitwarden.eu/api/two-factor/send-email-login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      JSON.stringify({
+        email: email,
+        masterPasswordHash: this.keys.masterPasswordHash!,
+        ssoEmail2FaSessionToken: "",
+        deviceIdentifier: DEVICE_IDENTIFIER,
+        authRequestAccessCode: "",
+        authRequestId: "",
+      })
+    );
   }
 
   // Check and refresh token if needed
