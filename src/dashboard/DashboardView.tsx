@@ -48,7 +48,8 @@ export function DashboardView({ onLogout }: Props) {
   }, [syncState, searchQuery]);
   const listIndex = useMemo(() => {
     if (!listSelected) return 0;
-    return filteredCiphers.findIndex((c) => c.id === listSelected.id);
+    const i = filteredCiphers.findIndex((c) => c.id === listSelected.id);
+    return i < 0 ? 0 : i;
   }, [listSelected, filteredCiphers]);
 
   const selectedCipher =
@@ -58,10 +59,6 @@ export function DashboardView({ onLogout }: Props) {
     await clearConfig();
     onLogout();
   };
-
-  useEffect(() => {
-    setListSelected(null);
-  }, [searchQuery]);
 
   useEffect(() => {
     setSyncState(sync);
@@ -160,7 +157,7 @@ export function DashboardView({ onLogout }: Props) {
       <Box minHeight={20} flexGrow={1}>
         <VaultList
           filteredCiphers={filteredCiphers}
-          isFocused={focusedComponent === "list"}
+          isFocused={["list", "search"].includes(focusedComponent)}
           selected={listIndex}
           onSelect={(index) => setListSelected(filteredCiphers[index] || null)}
         />
@@ -209,7 +206,7 @@ export function DashboardView({ onLogout }: Props) {
         />
       </Box>
 
-      <HelpBar focus={focusedComponent} />
+      <HelpBar focus={focusedComponent} cipher={selectedCipher} />
     </Box>
   );
 }

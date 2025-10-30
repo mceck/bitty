@@ -1,4 +1,4 @@
-import { Box, Text, useFocusManager, useStdout } from "ink";
+import { Box, Text, useFocusManager, useInput, useStdout } from "ink";
 import { useEffect, useState } from "react";
 import { TextInput } from "../components/TextInput.js";
 import { Button } from "../components/Button.js";
@@ -32,9 +32,20 @@ export function LoginView({ onLogin }: Props) {
   const [askMfa, setAskMfa] = useState<any>(null);
   const [rememberMe, setRememberMe] = useState(false);
   const { stdout } = useStdout();
-  const { focusNext } = useFocusManager();
+  const { focusNext, focusPrevious } = useFocusManager();
   const { statusMessage, statusMessageColor, showStatusMessage } =
     useStatusMessage();
+
+  useInput(
+    async (_, key) => {
+      if (key.upArrow) {
+        focusPrevious();
+      } else if (key.downArrow) {
+        focusNext();
+      }
+    },
+    { isActive: !loading }
+  );
 
   const handleLogin = async () => {
     try {

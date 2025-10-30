@@ -44,7 +44,8 @@ export const ScrollView = <T,>({
   );
 
   useEffect(() => {
-    if (selectedIndex < offset) setOffset(selectedIndex);
+    if (selectedIndex < offset)
+      setOffset(selectedIndex > 0 ? selectedIndex : 0);
   }, [selectedIndex]);
 
   return (

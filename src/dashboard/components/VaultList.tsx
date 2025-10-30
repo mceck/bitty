@@ -35,14 +35,43 @@ export function VaultList({
   const { showStatusMessage } = useStatusMessage();
   useInput(
     (input, key) => {
+      const cipher = selected !== null ? filteredCiphers[selected] : null;
+      let field, fldName;
       if (key.ctrl && input === "y") {
-        clipboard.writeSync(
-          filteredCiphers[selected ?? 0]?.login?.password ||
-            filteredCiphers[selected ?? 0]?.notes ||
-            filteredCiphers[selected ?? 0]?.name ||
-            ""
-        );
-        showStatusMessage("📋 Copied to clipboard!", "success");
+        switch (cipher?.type) {
+          case CipherType.Login:
+            field = cipher.login?.password;
+            fldName = "Password";
+            break;
+          case CipherType.SecureNote:
+            field = cipher.notes;
+            fldName = "Note";
+            break;
+          case CipherType.SSHKey:
+            field = cipher.sshKey?.privateKey;
+            fldName = "Private Key";
+            break;
+        }
+      } else if (key.ctrl && input === "u") {
+        switch (cipher?.type) {
+          case CipherType.Login:
+            field = cipher.login?.username;
+            fldName = "Username";
+            break;
+          case CipherType.SSHKey:
+            field = cipher.sshKey?.publicKey;
+            fldName = "Public Key";
+            break;
+        }
+      } else if (key.ctrl && input === "t") {
+        if (cipher?.type === CipherType.Login) {
+          field = cipher.login?.totp;
+          fldName = "TOTP";
+        }
+      }
+      if (field) {
+        clipboard.writeSync(field);
+        showStatusMessage(`📋 Copied ${fldName} to clipboard!`, "success");
       }
     },
     { isActive: isFocused }
