@@ -64,7 +64,6 @@ function fetch(
       const onEnd = () => {
         cleanup();
         if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
-          console.error("HTTP error body:", data);
           reject(
             new FetchError(
               res.statusCode,
