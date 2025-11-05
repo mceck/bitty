@@ -23,7 +23,9 @@ export function MainTab({
       interval = setInterval(() => {
         setOtpTimeout((t) => {
           if (t <= 1) {
-            setOtpCode(authenticator.generate(selectedCipher.login!.totp!));
+            const totp = authenticator.generate(selectedCipher.login!.totp!);
+            selectedCipher.login!.currentTotp = totp;
+            setOtpCode(totp);
             return 30;
           }
           return t - 1;

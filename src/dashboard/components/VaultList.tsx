@@ -65,7 +65,7 @@ export function VaultList({
         }
       } else if (key.ctrl && input === "t") {
         if (cipher?.type === CipherType.Login) {
-          field = cipher.login?.totp;
+          field = cipher.login?.currentTotp;
           fldName = "TOTP";
         }
       }

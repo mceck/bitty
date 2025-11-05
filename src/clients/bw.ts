@@ -153,6 +153,7 @@ export interface Cipher {
     username?: string;
     password?: string;
     totp?: string | null;
+    currentTotp?: string | null;
   };
   identity?: {
     address1: string | null;
