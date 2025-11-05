@@ -4,7 +4,7 @@ import { Cipher, CipherType } from "../../clients/bw.js";
 import { Button } from "../../components/Button.js";
 import { useState } from "react";
 import { MoreInfoTab } from "./MoreInfoTab.js";
-import { MainTab } from "./MainInfoTab.js";
+import { MainTab } from "./MainTab.js";
 
 export function CipherDetail({
   selectedCipher,

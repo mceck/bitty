@@ -4,6 +4,7 @@ import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
 import { useEffect, useState } from "react";
 import { authenticator } from "otplib";
+const OTP_INTERVAL = 30;
 
 export function MainTab({
   isFocused,
@@ -17,16 +18,24 @@ export function MainTab({
   const [otpCode, setOtpCode] = useState("");
   const [otpTimeout, setOtpTimeout] = useState(0);
 
+  const genOtp = () => {
+    if (selectedCipher.login?.totp) {
+      const totp = authenticator.generate(selectedCipher.login.totp);
+      selectedCipher.login.currentTotp = totp;
+      setOtpCode(totp);
+    }
+  };
+
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (selectedCipher?.login?.totp) {
+      genOtp();
+      setOtpTimeout(OTP_INTERVAL);
       interval = setInterval(() => {
         setOtpTimeout((t) => {
           if (t <= 1) {
-            const totp = authenticator.generate(selectedCipher.login!.totp!);
-            selectedCipher.login!.currentTotp = totp;
-            setOtpCode(totp);
-            return 30;
+            genOtp();
+            return OTP_INTERVAL;
           }
           return t - 1;
         });
