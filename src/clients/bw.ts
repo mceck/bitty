@@ -547,6 +547,13 @@ export class Client {
     return result;
   }
 
+  isVaultWarden() {
+    return (
+      !this.apiUrl.endsWith("bitwarden.eu/api") &&
+      !this.apiUrl.endsWith("bitwarden.com/api")
+    );
+  }
+
   setUrls(uri: ClientConfig) {
     if (uri.baseUrl) {
       this.apiUrl = uri.baseUrl + "/api";
@@ -939,7 +946,11 @@ export class Client {
 
   decrypt(value: string | null | undefined, key?: any) {
     if (!value) return value;
-    return mcbw.decrypt(value, key ?? this.keys.userKey);
+    try {
+      return mcbw.decrypt(value, key ?? this.keys.userKey);
+    } catch (error) {
+      return value;
+    }
   }
 
   encryptCipher(obj: Partial<CipherDto>, key?: any) {

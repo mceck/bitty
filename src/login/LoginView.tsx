@@ -133,7 +133,11 @@ export function LoginView({ onLogin }: Props) {
               key={provider}
               autoFocus
               onClick={() => {
-                if (provider === "1") {
+                if (
+                  provider === "1" &&
+                  (Object.values(askMfa).length > 1 ||
+                    !bwClient.isVaultWarden())
+                ) {
                   bwClient.sendEmailMfaCode(email);
                 }
                 setMfaParams((p: any) => ({
