@@ -7,21 +7,11 @@ import { bwClient, loadConfig, saveConfig } from "../hooks/bw.js";
 import { useStatusMessage } from "../hooks/status-message.js";
 import { Checkbox } from "../components/Checkbox.js";
 import { FetchError, TwoFactorProvider } from "../clients/bw.js";
+import { art } from "../theme/art.js";
 
 type Props = {
   onLogin: () => void;
 };
-
-const art = `
- ███████████   ███  ███████████ ███████████ █████ █████
-░░███░░░░░███ ░░░  ░█░░░███░░░█░█░░░███░░░█░░███ ░░███
- ░███    ░███ ████ ░   ░███  ░ ░   ░███  ░  ░░███ ███
- ░██████████ ░░███     ░███        ░███      ░░█████
- ░███░░░░░███ ░███     ░███        ░███       ░░███
- ░███    ░███ ░███     ░███        ░███        ░███
- ███████████  █████    █████       █████       █████
-░░░░░░░░░░░  ░░░░░    ░░░░░       ░░░░░       ░░░░░
-`;
 
 export function LoginView({ onLogin }: Props) {
   const [loading, setLoading] = useState(true);

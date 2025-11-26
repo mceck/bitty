@@ -34,7 +34,8 @@
     "clipboardy": "^4.0.0",
     "ink": "^6.3.0",
     "otplib": "^12.0.1",
-    "react": "^19.1.0"
+    "react": "^19.1.0",
+    "read-package-up": "^12.0.0"
   },
   "devDependencies": {
     "@sindresorhus/tsconfig": "^8.0.1",
