@@ -4,11 +4,15 @@ import App from "./app.js";
 import { StatusMessageProvider } from "./hooks/status-message.js";
 import { readPackageUpSync } from "read-package-up";
 import { art } from "./theme/art.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
 
 if (args.includes("--version") || args.includes("-v")) {
-  const pkg = readPackageUpSync();
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const pkg = readPackageUpSync({ cwd: __dirname });
   console.log(pkg?.packageJson.version ?? "unknown");
   process.exit(0);
 }
