@@ -4,8 +4,10 @@ import { Cipher, CipherType } from "../../clients/bw.js";
 export function HelpBar({
   focus,
   cipher,
+  mode,
 }: {
   focus: "list" | "search" | "detail";
+  mode: "view" | "new";
   cipher: Cipher | null | undefined;
 }) {
   return (
@@ -44,6 +46,11 @@ export function HelpBar({
       ) : (
         <Text color="gray">
           <Text bold>Tab/Enter </Text>Focus List
+        </Text>
+      )}
+      {mode !== "new" && (
+        <Text color="gray">
+          <Text bold>Ctrl+n </Text>New
         </Text>
       )}
       {...copyButtons(focus, cipher)}

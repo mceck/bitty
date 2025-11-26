@@ -84,6 +84,14 @@ export function DashboardView({ onLogout }: Props) {
       return;
     }
 
+    if (key.ctrl && input === "n") {
+      setDetailMode("new");
+      setEditedCipher(emptyCipher);
+      setFocusedComponent("detail");
+      setShowDetails(false);
+      return;
+    }
+
     if (key.escape) {
       setFocusedComponent("list");
       setDetailMode("view");
@@ -99,12 +107,6 @@ export function DashboardView({ onLogout }: Props) {
       }
     } else if (focusedComponent === "list") {
       if (key.return || key.tab) {
-        setFocusedComponent("detail");
-        setShowDetails(false);
-      }
-      if (input === "n") {
-        setDetailMode("new");
-        setEditedCipher(emptyCipher);
         setFocusedComponent("detail");
         setShowDetails(false);
       }
@@ -206,7 +208,11 @@ export function DashboardView({ onLogout }: Props) {
         />
       </Box>
 
-      <HelpBar focus={focusedComponent} cipher={selectedCipher} />
+      <HelpBar
+        focus={focusedComponent}
+        cipher={selectedCipher}
+        mode={detailMode}
+      />
     </Box>
   );
 }
