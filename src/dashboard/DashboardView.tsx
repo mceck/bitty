@@ -56,6 +56,7 @@ export function DashboardView({ onLogout }: Props) {
     detailMode === "new" ? editedCipher : filteredCiphers[listIndex];
 
   const logout = async () => {
+    bwClient.logout();
     await clearConfig();
     onLogout();
   };

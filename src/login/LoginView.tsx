@@ -20,11 +20,27 @@ export function LoginView({ onLogin }: Props) {
   const [password, setPassword] = useState("");
   const [mfaParams, setMfaParams] = useState<any>(null);
   const [askMfa, setAskMfa] = useState<any>(null);
+  const [mfaProviderData, setMfaProviderData] = useState<Record<
+    string,
+    any
+  > | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const [resendTimeout, setResendTimeout] = useState(0);
   const { stdout } = useStdout();
   const { focusNext, focusPrevious } = useFocusManager();
   const { statusMessage, statusMessageColor, showStatusMessage } =
     useStatusMessage();
+
+  const getProviderLabel = (provider: any) =>
+    TwoFactorProvider[String(provider)] ?? `Provider ${provider}`;
+
+  const getProviderData = (provider: any) =>
+    mfaProviderData?.[String(provider)] ?? null;
+
+  const isEmailProvider = (provider: any) => String(provider) === "1";
+  const isDuoProvider = (provider: any) =>
+    String(provider) === "2" || String(provider) === "6";
+  const isWebAuthnProvider = (provider: any) => String(provider) === "7";
 
   useInput(
     async (_, key) => {
@@ -55,13 +71,26 @@ export function LoginView({ onLogin }: Props) {
       } catch (e) {
         if (e instanceof FetchError) {
           const data = e.json();
+          if (data.TwoFactorProviders2) {
+            setMfaProviderData(data.TwoFactorProviders2);
+          }
           if (data.TwoFactorProviders) {
-            if (data.TwoFactorProviders.length === 1) {
+            const providers = data.TwoFactorProviders;
+            if (providers.length === 1) {
               setMfaParams({
-                twoFactorProvider: data.TwoFactorProviders[0],
+                twoFactorProvider: providers[0],
               });
-            } else if (data.TwoFactorProviders.length > 1) {
-              setAskMfa(data.TwoFactorProviders);
+            } else if (providers.length > 1) {
+              setAskMfa(providers);
+            }
+          } else if (data.TwoFactorProviders2) {
+            const providers = Object.keys(data.TwoFactorProviders2);
+            if (providers.length === 1) {
+              setMfaParams({
+                twoFactorProvider: providers[0],
+              });
+            } else if (providers.length > 1) {
+              setAskMfa(providers);
             }
           }
         } else {
@@ -103,6 +132,18 @@ export function LoginView({ onLogin }: Props) {
     })();
   }, []);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimeout > 0) {
+      interval = setInterval(() => {
+        setResendTimeout((t) => t - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [resendTimeout]);
+
   return (
     <Box
       flexDirection="column"
@@ -124,7 +165,7 @@ export function LoginView({ onLogin }: Props) {
               autoFocus
               onClick={() => {
                 if (
-                  provider === "1" &&
+                  isEmailProvider(provider) &&
                   (Object.values(askMfa).length > 1 ||
                     !bwClient.isVaultWarden())
                 ) {
@@ -137,23 +178,74 @@ export function LoginView({ onLogin }: Props) {
                 setAskMfa(null);
               }}
             >
-              {TwoFactorProvider[provider]}
+              {getProviderLabel(provider)}
             </Button>
           ))}
         </Box>
       ) : mfaParams && mfaParams.twoFactorProvider ? (
         <Box flexDirection="column" width="50%">
+          {isDuoProvider(mfaParams.twoFactorProvider) && (
+            <Box flexDirection="column" marginBottom={1}>
+              <Text>
+                Open the Duo URL in a browser and approve the request.
+              </Text>
+              <Text>
+                Then paste the `code` and `state` from the final URL as
+                `code|state`.
+              </Text>
+              {getProviderData(mfaParams.twoFactorProvider)?.AuthUrl && (
+                <Text>
+                  Auth URL:{" "}
+                  {getProviderData(mfaParams.twoFactorProvider).AuthUrl}
+                </Text>
+              )}
+            </Box>
+          )}
+          {isWebAuthnProvider(mfaParams.twoFactorProvider) && (
+            <Box flexDirection="column" marginBottom={1}>
+              <Text>
+                Use your FIDO2/WebAuthn security key to generate a response,
+                then paste it here.
+              </Text>
+            </Box>
+          )}
           <TextInput
             autoFocus
-            placeholder={`Enter your ${
-              TwoFactorProvider[mfaParams.twoFactorProvider]
-            } code`}
+            placeholder={`Enter your ${getProviderLabel(
+              mfaParams.twoFactorProvider
+            )} ${
+              isWebAuthnProvider(mfaParams.twoFactorProvider)
+                ? "response"
+                : "code"
+            }`}
             value={mfaParams.twoFactorToken || ""}
             onChange={(value) =>
               setMfaParams((p: any) => ({ ...p, twoFactorToken: value }))
             }
             onSubmit={() => handleLogin()}
           />
+          {isEmailProvider(mfaParams.twoFactorProvider) && (
+            <Button
+              marginTop={1}
+              isActive={resendTimeout === 0}
+              onClick={() => {
+                bwClient
+                  .sendEmailMfaCode(email)
+                  .then(() => {
+                    showStatusMessage(
+                      "Sent new MFA code to your email.",
+                      "success"
+                    );
+                  })
+                  .catch(() => {
+                    showStatusMessage("Failed to resend MFA code.", "error");
+                  });
+                setResendTimeout(30);
+              }}
+            >
+              Resend Code
+            </Button>
+          )}
         </Box>
       ) : (
         <Box flexDirection="column" width="50%">

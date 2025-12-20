@@ -127,9 +127,12 @@ export enum KeyType {
 export const TwoFactorProvider: Record<string, string> = {
   "0": "Authenticator",
   "1": "Email",
-  "2": "Fido2",
+  "2": "Duo",
   "3": "Yubikey",
-  "4": "Duo",
+  "4": "U2f",
+  "6": "Org Duo",
+  "7": "Fido2",
+  "8": "Recovery Code",
 };
 
 export interface Cipher {
@@ -646,7 +649,7 @@ export class Client {
 
   async sendEmailMfaCode(email: string) {
     fetch(
-      "https://vault.bitwarden.eu/api/two-factor/send-email-login",
+      `${this.apiUrl}/two-factor/send-email-login`,
       {
         method: "POST",
         headers: {
@@ -1044,5 +1047,15 @@ export class Client {
       };
     }
     return ret;
+  }
+
+  logout() {
+    this.token = null;
+    this.refreshToken = null;
+    this.tokenExpiration = null;
+    this.keys = {};
+    this.orgKeys = {};
+    this.decryptedSyncCache = null;
+    this.syncCache = null;
   }
 }
