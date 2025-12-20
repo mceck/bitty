@@ -3,7 +3,13 @@
 ## Install
 
 ```bash
-$ npm install -g bitty-tui
+npm install -g bitty-tui
+```
+
+Run with:
+
+```bash
+bitty
 ```
 
 ## Description
@@ -20,7 +26,7 @@ If you check "Remember me" during login, your vault encryption keys will be stor
 ## TODO
 
 - Collections support
-- Implement Fido, Duo MFA support
+- Test Fido, Duo MFA support
 - Handle more fields editing
 - Handle creating different cipher types
 
