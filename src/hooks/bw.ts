@@ -25,8 +25,6 @@ export async function loadConfig() {
       }
       if (config.keys && config.refreshToken) {
         const keys: any = {};
-        if (config.keys.masterKey)
-          keys.masterKey = Uint8Array.from(config.keys.masterKey);
         if (config.keys.masterPasswordHash)
           keys.masterPasswordHash = config.keys.masterPasswordHash;
         if (config.keys.privateKey)
@@ -59,7 +57,6 @@ export async function loadConfig() {
 }
 export async function saveConfig(config: BwConfig) {
   const keys: any = {};
-  if (config.keys.masterKey) keys.masterKey = Array.from(config.keys.masterKey);
   if (config.keys.masterPasswordHash)
     keys.masterPasswordHash = config.keys.masterPasswordHash;
   if (config.keys.privateKey)

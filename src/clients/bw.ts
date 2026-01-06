@@ -637,6 +637,7 @@ export class Client {
       keys
     );
 
+    keys.masterKey = undefined; // Clear master key from memory
     this.keys = {
       ...keys,
       userKey,

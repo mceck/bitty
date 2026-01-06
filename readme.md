@@ -31,8 +31,8 @@ If you check "Remember me" during login, your vault encryption keys will be stor
 - Handle creating different cipher types
 
 ## Acknowledgments
-
-- [Bitwarden](https://github.com/bitwarden)
+- [Bitwarden whitepaper](https://bitwarden.com/help/bitwarden-security-white-paper)
+- [Bitwarden github](https://github.com/bitwarden)
 - [BitwardenDecrypt](https://github.com/GurpreetKang/BitwardenDecrypt)
 
 This project is not associated with [Bitwarden](https://github.com/bitwarden) or [Bitwarden, Inc.](https://bitwarden.com/)
