@@ -18,15 +18,8 @@
  * 4. Decrypt cipher fields using the chosen key
  */
 
-import https from "node:https";
 import crypto from "node:crypto";
 import * as argon2 from "argon2";
-
-interface FetchResponse {
-  status: number | undefined;
-  json: () => Promise<any>;
-  text: () => Promise<string>;
-}
 
 export class FetchError extends Error {
   status: number;
@@ -42,69 +35,15 @@ export class FetchError extends Error {
   }
 }
 
-function fetch(
-  url: string,
-  options: { method?: string; headers?: Record<string, string> } = {},
-  body: any = null
-): Promise<FetchResponse> {
-  return new Promise((resolve, reject) => {
-    const urlObj = new URL(url);
-    const requestOptions = {
-      hostname: urlObj.hostname,
-      path: urlObj.pathname + urlObj.search,
-      method: options.method || "GET",
-      headers: options.headers || {},
-    };
+const fetchApi = async (...args: Parameters<typeof fetch>) => {
+  const response = await fetch(...args);
+  if (!response.ok) {
+    const data = await response.text();
+    throw new FetchError(response.status, data);
+  }
+  return response;
+};
 
-    const req = https.request(requestOptions, (res) => {
-      let data = "";
-      const onData = (chunk: any) => {
-        data += chunk;
-      };
-      const onEnd = () => {
-        cleanup();
-        if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
-          reject(
-            new FetchError(
-              res.statusCode,
-              data,
-              `HTTP error: ${res.statusCode} ${res.statusMessage}`
-            )
-          );
-          return;
-        }
-        resolve({
-          status: res.statusCode,
-          json: () => Promise.resolve(JSON.parse(data)),
-          text: () => Promise.resolve(data),
-        });
-      };
-      const onError = (error: Error) => {
-        cleanup();
-        reject(error);
-      };
-
-      const cleanup = () => {
-        res.removeListener("data", onData);
-        res.removeListener("end", onEnd);
-        res.removeListener("error", onError);
-      };
-
-      res.on("data", onData);
-      res.on("end", onEnd);
-      res.on("error", onError);
-    });
-
-    req.on("error", (error) => {
-      reject(error);
-    });
-
-    if (body) {
-      req.write(typeof body === "string" ? body : JSON.stringify(body));
-    }
-    req.end();
-  });
-}
 
 export enum CipherType {
   Login = 1,
@@ -589,18 +528,13 @@ export class Client {
   ): Promise<void> {
     let keys = this.keys;
     if (!skipPrelogin) {
-      const prelogin = await fetch(
-        `${this.identityUrl}/accounts/prelogin`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const prelogin = await fetchApi(`${this.identityUrl}/accounts/prelogin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        {
-          email,
-        }
-      ).then((r) => r.json());
+        body: JSON.stringify({ email }),
+      }).then((r) => r.json());
       keys = await mcbw.deriveMasterKey(email, password, prelogin);
       this.keys = keys;
     }
@@ -617,16 +551,17 @@ export class Client {
     for (const [key, value] of Object.entries(opts || {})) {
       bodyParams.append(key, value);
     }
-    const identityReq = await fetch(
-      `${this.identityUrl}/connect/token`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+    const identityReq = await fetchApi(`${this.identityUrl}/connect/token`, {
+      method: "POST",
+      headers: {
+        accept: "*/*",
+        "accept-language": "en-US",
+        "bitwarden-client-name": "web",
+        "bitwarden-client-version": "2025.9.0",
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
       },
-      bodyParams.toString()
-    ).then((r) => r.json());
+      body: bodyParams.toString(),
+    }).then((r) => r.json());
 
     this.token = identityReq.access_token;
     this.refreshToken = identityReq.refresh_token;
@@ -634,7 +569,7 @@ export class Client {
     const { userKey, privateKey } = mcbw.decodeUserKeys(
       identityReq.Key,
       identityReq.PrivateKey || "",
-      keys
+      keys,
     );
 
     keys.masterKey = undefined; // Clear master key from memory
@@ -649,23 +584,20 @@ export class Client {
   }
 
   async sendEmailMfaCode(email: string) {
-    fetch(
-      `${this.apiUrl}/two-factor/send-email-login`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+    fetchApi(`${this.apiUrl}/two-factor/send-email-login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      JSON.stringify({
+      body: JSON.stringify({
         email: email,
         masterPasswordHash: this.keys.masterPasswordHash!,
         ssoEmail2FaSessionToken: "",
         deviceIdentifier: DEVICE_IDENTIFIER,
         authRequestAccessCode: "",
         authRequestId: "",
-      })
-    );
+      }),
+    });
   }
 
   // Check and refresh token if needed
@@ -674,16 +606,13 @@ export class Client {
       if (!this.refreshToken) {
         throw new Error("No refresh token available. Please login first.");
       }
-      const identityReq = await fetch(
-        `${this.identityUrl}/connect/token`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
+      const identityReq = await fetchApi(`${this.identityUrl}/connect/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-        `refresh_token=${this.refreshToken}&grant_type=refresh_token&client_id=web&scope=api%20offline_access`
-      ).then((r) => r.json());
+        body: `refresh_token=${this.refreshToken}&grant_type=refresh_token&client_id=web&scope=api%20offline_access`,
+      }).then((r) => r.json());
 
       this.token = identityReq.access_token;
       this.refreshToken = identityReq.refresh_token;
@@ -698,7 +627,7 @@ export class Client {
    */
   async syncRefresh() {
     await this.checkToken();
-    this.syncCache = await fetch(`${this.apiUrl}/sync?excludeDomains=true`, {
+    this.syncCache = await fetchApi(`${this.apiUrl}/sync?excludeDomains=true`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${this.token}`,
@@ -870,18 +799,14 @@ export class Client {
 
   async createSecret(obj: CipherDto) {
     const key = this.getDecryptionKey(obj);
-    const s = await fetch(
-      `${this.apiUrl}/ciphers`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          "Content-Type": "application/json",
-        },
+    const s = await fetchApi(`${this.apiUrl}/ciphers`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        "Content-Type": "application/json",
       },
-
-      this.encryptCipher(obj, key)
-    );
+      body: JSON.stringify(this.encryptCipher(obj, key)),
+    });
     return s.json();
   }
 
@@ -926,17 +851,14 @@ export class Client {
     const key = this.getDecryptionKey(patch);
     const data = this.patchObject(original, this.encryptCipher(obj, key));
     (data as any).data = undefined;
-    const s = await fetch(
-      `${this.apiUrl}/ciphers/${id}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          "Content-Type": "application/json",
-        },
+    const s = await fetchApi(`${this.apiUrl}/ciphers/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        "Content-Type": "application/json",
       },
-      data
-    );
+      body: JSON.stringify(data),
+    });
     this.decryptedSyncCache = null;
     this.syncCache = null;
     return s.json();
