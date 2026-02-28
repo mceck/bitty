@@ -11,7 +11,41 @@ interface BwConfig {
 }
 
 export const bwClient = new Client();
-const configPath = path.join(os.homedir(), ".config", "bitty", "config.json");
+const configDir = path.join(os.homedir(), ".config", "bitty");
+const configPath = path.join(configDir, "config.json");
+
+export interface LoginHints {
+  email?: string;
+  baseUrl?: string;
+}
+
+export async function loadLoginHints(): Promise<LoginHints> {
+  try {
+    if (fs.existsSync(configPath)) {
+      const content = await fs.promises.readFile(configPath, "utf-8");
+      const config = JSON.parse(
+        Buffer.from(content, "base64").toString("utf-8")
+      );
+      return { email: config.email, baseUrl: config.baseUrl };
+    }
+  } catch {}
+  return {};
+}
+
+export async function saveLoginHints(hints: LoginHints) {
+  let config: any = {};
+  try {
+    if (fs.existsSync(configPath)) {
+      const content = await fs.promises.readFile(configPath, "utf-8");
+      config = JSON.parse(Buffer.from(content, "base64").toString("utf-8"));
+    }
+  } catch {}
+  config.email = hints.email;
+  config.baseUrl = hints.baseUrl;
+  const encoded = Buffer.from(JSON.stringify(config)).toString("base64");
+  await fs.promises.mkdir(configDir, { recursive: true });
+  await fs.promises.writeFile(configPath, encoded);
+}
 
 export async function loadConfig() {
   try {
@@ -80,7 +114,7 @@ export async function saveConfig(config: BwConfig) {
       keys,
     })
   ).toString("base64");
-  await fs.promises.mkdir(path.dirname(configPath), { recursive: true });
+  await fs.promises.mkdir(configDir, { recursive: true });
   await fs.promises.writeFile(configPath, encConfig);
 }
 

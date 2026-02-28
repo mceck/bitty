@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { TextInput } from "../components/TextInput.js";
 import { Button } from "../components/Button.js";
 import { primary } from "../theme/style.js";
-import { bwClient, loadConfig, saveConfig } from "../hooks/bw.js";
+import { bwClient, loadConfig, loadLoginHints, saveConfig, saveLoginHints } from "../hooks/bw.js";
 import { useStatusMessage } from "../hooks/status-message.js";
 import { Checkbox } from "../components/Checkbox.js";
 import { FetchError, TwoFactorProvider } from "../clients/bw.js";
@@ -108,6 +108,11 @@ export function LoginView({ onLogin }: Props) {
           keys: bwClient.keys,
           refreshToken: bwClient.refreshToken,
         });
+      } else {
+        saveLoginHints({
+          email: email?.trim() || undefined,
+          baseUrl: url?.trim() || undefined,
+        });
       }
     } catch (e) {
       showStatusMessage(
@@ -123,7 +128,11 @@ export function LoginView({ onLogin }: Props) {
         const loggedIn = await loadConfig();
         if (loggedIn) {
           onLogin();
+          return;
         }
+        const hints = await loadLoginHints();
+        if (hints.baseUrl) setUrl(hints.baseUrl);
+        if (hints.email) setEmail(hints.email);
       } catch (e) {
         showStatusMessage("Failed to load config file", "error");
       } finally {
