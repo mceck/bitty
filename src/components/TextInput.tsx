@@ -1,9 +1,17 @@
-import { Text, Box, useFocus, useInput, useFocusManager } from "ink";
+import {
+  Text,
+  Box,
+  useFocus,
+  useInput,
+  useFocusManager,
+  type DOMElement,
+} from "ink";
 import { primary } from "../theme/style.js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import clipboard from "clipboardy";
 import chalk from "chalk";
 import { useStatusMessage } from "../hooks/status-message.js";
+import { useMouseTarget } from "../hooks/use-mouse.js";
 
 type Props = {
   id?: string;
@@ -39,9 +47,13 @@ export const TextInput = ({
 }: Props) => {
   const [cursor, setCursor] = useState(onChange ? value.length : 0);
   const [scrollOffset, setScrollOffset] = useState(0);
-  const { isFocused } = useFocus({ id, isActive, autoFocus });
+  const generatedId = useId();
+  const effectiveId = id ?? generatedId;
+  const { isFocused } = useFocus({ id: effectiveId, isActive, autoFocus });
   const { showStatusMessage } = useStatusMessage();
   const { focusNext } = useFocusManager();
+  const boxRef = useRef<DOMElement>(null);
+  useMouseTarget(effectiveId, boxRef);
 
   const displayValue = useMemo(() => {
     let displayValue = value;
@@ -240,6 +252,7 @@ export const TextInput = ({
 
   return (
     <Box
+      ref={boxRef}
       borderStyle="round"
       borderColor={isFocused ? primary : "gray"}
       borderBottom={!inline}

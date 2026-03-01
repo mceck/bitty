@@ -8,6 +8,7 @@ export const ScrollView = <T,>({
   selectedIndex,
   onSelect,
   onSubmit,
+  offsetRef,
   children,
 }: {
   count: number;
@@ -16,9 +17,11 @@ export const ScrollView = <T,>({
   selectedIndex: number;
   onSelect?: (position: number) => void;
   onSubmit?: (position: number) => void;
+  offsetRef?: React.MutableRefObject<number>;
   children: (arg: { el: T; index: number; selected: boolean }) => ReactNode;
 }) => {
   const [offset, setOffset] = useState(0);
+  if (offsetRef) offsetRef.current = offset;
   useInput(
     (input, key) => {
       if (key.upArrow) {

@@ -2,6 +2,7 @@
 import { render } from "ink";
 import App from "./app.js";
 import { StatusMessageProvider } from "./hooks/status-message.js";
+import { MouseProvider } from "./hooks/use-mouse.js";
 import { readPackageUpSync } from "read-package-up";
 import { art } from "./theme/art.js";
 import path from "node:path";
@@ -31,6 +32,8 @@ if (args.includes("--help") || args.includes("-h")) {
 
 render(
   <StatusMessageProvider>
-    <App />
+    <MouseProvider>
+      <App />
+    </MouseProvider>
   </StatusMessageProvider>
 );

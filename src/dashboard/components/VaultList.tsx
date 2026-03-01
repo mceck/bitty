@@ -1,9 +1,11 @@
-import { Box, Text, useInput, useStdout } from "ink";
+import { Box, Text, useInput, useStdout, type DOMElement } from "ink";
 import { primary, primaryDark, primaryLight } from "../../theme/style.js";
 import { Cipher, CipherType } from "../../clients/bw.js";
 import { ScrollView } from "../../components/ScrollView.js";
 import clipboard from "clipboardy";
 import { useStatusMessage } from "../../hooks/status-message.js";
+import { useRef } from "react";
+import { useMouseTarget } from "../../hooks/use-mouse.js";
 
 const getTypeIcon = (type: CipherType) => {
   switch (type) {
@@ -33,6 +35,18 @@ export function VaultList({
 }) {
   const { stdout } = useStdout();
   const { showStatusMessage } = useStatusMessage();
+  const boxRef = useRef<DOMElement>(null);
+  const scrollOffsetRef = useRef(0);
+  useMouseTarget("list", boxRef, {
+    noFocus: true,
+    onClick: (_relX, relY) => {
+      const visibleIndex = relY - 1; // -1 for border
+      const actualIndex = scrollOffsetRef.current + visibleIndex;
+      if (actualIndex >= 0 && actualIndex < filteredCiphers.length) {
+        onSelect(actualIndex);
+      }
+    },
+  });
   useInput(
     (input, key) => {
       const cipher = selected !== null ? filteredCiphers[selected] : null;
@@ -78,6 +92,7 @@ export function VaultList({
   );
   return (
     <Box
+      ref={boxRef}
       flexDirection="column"
       width="40%"
       borderStyle="round"
@@ -92,6 +107,7 @@ export function VaultList({
         list={filteredCiphers}
         selectedIndex={selected ?? 0}
         onSelect={onSelect}
+        offsetRef={scrollOffsetRef}
       >
         {({ el: cipher, selected }) => (
           <Box

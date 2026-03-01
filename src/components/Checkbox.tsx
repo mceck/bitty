@@ -1,5 +1,7 @@
-import { Text, Box, useFocus, useInput } from "ink";
+import { Text, Box, useFocus, useInput, type DOMElement } from "ink";
+import { useId, useRef } from "react";
 import { primary } from "../theme/style.js";
+import { useMouseTarget } from "../hooks/use-mouse.js";
 
 type Props = {
   isActive?: boolean;
@@ -15,7 +17,12 @@ export const Checkbox = ({
   onToggle,
   ...props
 }: Props) => {
-  const { isFocused } = useFocus();
+  const generatedId = useId();
+  const { isFocused } = useFocus({ id: generatedId });
+  const boxRef = useRef<DOMElement>(null);
+  useMouseTarget(generatedId, boxRef, {
+    onClick: () => onToggle(!value),
+  });
 
   useInput(
     (input, key) => {
@@ -27,7 +34,7 @@ export const Checkbox = ({
   );
 
   return (
-    <Box {...props}>
+    <Box ref={boxRef} {...props}>
       <Box
         width={5}
         height={3}

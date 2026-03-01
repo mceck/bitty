@@ -8,6 +8,7 @@ import { primary } from "../theme/style.js";
 import { bwClient, clearConfig, emptyCipher, useBwSync } from "../hooks/bw.js";
 import { Cipher, SyncResponse } from "../clients/bw.js";
 import { useStatusMessage } from "../hooks/status-message.js";
+import { useMouseSubscribe } from "../hooks/use-mouse.js";
 
 type Props = {
   onLogout: () => void;
@@ -61,13 +62,19 @@ export function DashboardView({ onLogout }: Props) {
     onLogout();
   };
 
+  useMouseSubscribe((targetId) => {
+    if (targetId === "search") {
+      setFocusedComponent("search");
+    } else if (targetId === "list") {
+      setFocusedComponent("list");
+    } else {
+      setFocusedComponent("detail");
+    }
+  });
+
   useEffect(() => {
     setSyncState(sync);
   }, [sync]);
-
-  useEffect(() => {
-    if (focusedComponent === "detail") focusNext();
-  }, [focusedComponent]);
 
   useEffect(() => {
     if (error) showStatusMessage(error, "error");
