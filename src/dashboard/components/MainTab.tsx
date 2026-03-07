@@ -58,6 +58,7 @@ function Field({
   onChange,
   isPassword,
   labelWidth = 12,
+  maxLines = 3,
 }: {
   label: string;
   value: string;
@@ -65,21 +66,24 @@ function Field({
   onChange?: (v: string) => void;
   isPassword?: boolean;
   labelWidth?: number;
+  maxLines?: number;
 }) {
   return (
     <Box flexDirection="row">
-      <Box width={labelWidth} marginRight={2} flexShrink={0}>
+      <Box width={labelWidth} flexShrink={0}>
         <Text bold color={isFocused ? primaryLight : "gray"}>
           {label}:
         </Text>
       </Box>
-      <Box flexGrow={1} paddingLeft={1}>
+      <Box flexGrow={1}>
         <TextInput
           inline
           isActive={isFocused}
           isPassword={isPassword}
           showPasswordOnFocus={isPassword}
           value={value}
+          multiline={maxLines > 1}
+          maxLines={maxLines}
           onChange={onChange}
         />
       </Box>
@@ -167,6 +171,7 @@ export function MainTab({
     <Box flexDirection="column" gap={1}>
       <Field
         label="Name"
+        labelWidth={selectedCipher.type === CipherType.SSHKey ? 13 : 12}
         value={selectedCipher.name}
         isFocused={isFocused}
         onChange={(value) => onChange({ ...selectedCipher, name: value })}
@@ -189,12 +194,12 @@ export function MainTab({
       {selectedCipher.type === CipherType.Login && (
         <Box flexDirection="row">
           <Box flexDirection="row" flexGrow={1}>
-            <Box width={12} marginRight={2} flexShrink={0}>
+            <Box width={12} flexShrink={0}>
               <Text bold color={isFocused ? primaryLight : "gray"}>
                 Password:
               </Text>
             </Box>
-            <Box flexGrow={1} paddingLeft={1}>
+            <Box flexGrow={1}>
               <TextInput
                 inline
                 isPassword
@@ -211,13 +216,13 @@ export function MainTab({
             </Box>
           </Box>
           {selectedCipher.login?.totp && (
-            <Box flexDirection="row" flexGrow={1}>
-              <Box marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width={20} flexShrink={0}>
+              <Box flexShrink={0} width={12}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   OTP ({otpTimeout.toString().padStart(2, "0")}s):
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput inline isActive={isFocused} value={otpCode} />
               </Box>
             </Box>
@@ -269,12 +274,12 @@ export function MainTab({
           />
           <Box flexDirection="row" gap={2}>
             <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Exp Month:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -284,12 +289,12 @@ export function MainTab({
               </Box>
             </Box>
             <Box flexDirection="row" flexGrow={1}>
-              <Box width={10} marginRight={2} flexShrink={0}>
+              <Box width={10} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Exp Year:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -313,13 +318,13 @@ export function MainTab({
       {selectedCipher.type === CipherType.Identity && (
         <>
           <Box flexDirection="row" gap={2}>
-            <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width="50%" flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Title:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -328,13 +333,13 @@ export function MainTab({
                 />
               </Box>
             </Box>
-            <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width="50%" flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   First Name:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -345,13 +350,13 @@ export function MainTab({
             </Box>
           </Box>
           <Box flexDirection="row" gap={2}>
-            <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width="50%" flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Middle:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -360,13 +365,13 @@ export function MainTab({
                 />
               </Box>
             </Box>
-            <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width="50%" flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Last Name:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -377,13 +382,13 @@ export function MainTab({
             </Box>
           </Box>
           <Box flexDirection="row" gap={2}>
-            <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width="50%" flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Username:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -392,13 +397,13 @@ export function MainTab({
                 />
               </Box>
             </Box>
-            <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width="50%" flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Company:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -409,13 +414,13 @@ export function MainTab({
             </Box>
           </Box>
           <Box flexDirection="row" gap={2}>
-            <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width="50%" flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Email:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -424,13 +429,13 @@ export function MainTab({
                 />
               </Box>
             </Box>
-            <Box flexDirection="row" flexGrow={1}>
-              <Box width={12} marginRight={2} flexShrink={0}>
+            <Box flexDirection="row" width="50%" flexShrink={0}>
+              <Box width={12} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
                   Phone:
                 </Text>
               </Box>
-              <Box flexGrow={1} paddingLeft={1}>
+              <Box flexGrow={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
@@ -448,11 +453,13 @@ export function MainTab({
         <>
           <Field
             label="Private Key"
+            labelWidth={13}
             value={selectedCipher.sshKey?.privateKey ?? ""}
             isFocused={isFocused}
           />
           <Field
             label="Public Key"
+            labelWidth={13}
             value={selectedCipher.sshKey?.publicKey ?? ""}
             isFocused={isFocused}
           />
@@ -460,12 +467,12 @@ export function MainTab({
       )}
 
       <Box flexDirection="row">
-        <Box width={12} flexShrink={0} marginRight={2}>
+        <Box width={selectedCipher.type === CipherType.SSHKey ? 12 : 11} flexShrink={0}>
           <Text bold color={isFocused ? primaryLight : "gray"}>
             Notes:
           </Text>
         </Box>
-        <Box flexGrow={1} minHeight={7}>
+        <Box flexGrow={1} minHeight={6}>
           <TextInput
             multiline
             maxLines={5}
