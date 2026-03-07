@@ -177,17 +177,21 @@ export function DashboardView({ onLogout }: Props) {
           {selectedCipher && (
             <Box gap={1} flexShrink={0}>
               <TabButton
+                active={activeTab === "main"}
+                onClick={() => setActiveTab("main")}
+              >
+                Main
+              </TabButton>
+              <TabButton
                 active={activeTab === "more"}
-                onClick={() => setActiveTab(activeTab === "more" ? "main" : "more")}
+                onClick={() => setActiveTab("more")}
               >
                 More
               </TabButton>
-              {!!syncState?.collections?.length && selectedCipher.organizationId && (
+              {!!syncState?.collections?.length && (
                 <TabButton
                   active={activeTab === "collections"}
-                  onClick={() =>
-                    setActiveTab(activeTab === "collections" ? "main" : "collections")
-                  }
+                  onClick={() => setActiveTab("collections")}
                 >
                   Collections
                 </TabButton>
