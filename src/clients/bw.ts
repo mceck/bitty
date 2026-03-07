@@ -79,7 +79,7 @@ export interface Cipher {
   type: CipherType;
   key?: string | null;
   folderId?: string | null;
-  organizationId: string | null;
+  organizationId?: string | null;
   collectionIds?: string[] | null;
   deletedDate: string | null;
   name: string;

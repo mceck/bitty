@@ -1,6 +1,5 @@
 import { Box, Text, useInput, useStdout } from "ink";
 import { Cipher, Collection } from "../../clients/bw.js";
-import { primaryLight } from "../../theme/style.js";
 import { useId, useRef, useState } from "react";
 import { useMouseTarget } from "../../hooks/use-mouse.js";
 
@@ -18,6 +17,16 @@ export function CollectionsTab({
   const { stdout } = useStdout();
   const [cursor, setCursor] = useState(0);
   const selected = selectedCipher.collectionIds ?? [];
+  useInput(
+    (_input, key) => {
+      if (key.upArrow) {
+        setCursor((c) => Math.max(0, c - 1));
+      } else if (key.downArrow) {
+        setCursor((c) => Math.min(collections.length - 1, c + 1));
+      }
+    },
+    { isActive: isFocused },
+  );
 
   if (!collections.length) {
     return (
@@ -32,18 +41,9 @@ export function CollectionsTab({
       {collections.map((col, idx) => {
         const checked = selected.includes(col.id);
         const isCursor = cursor === idx && isFocused;
-        useInput(
-          (_input, key) => {
-            if (key.upArrow) {
-              setCursor((c) => Math.max(0, c - 1));
-            } else if (key.downArrow) {
-              setCursor((c) => Math.min(collections.length - 1, c + 1));
-            }
-          },
-          { isActive: isFocused },
-        );
         return (
           <CollectionCheckbox
+            key={col.id}
             col={col}
             isCursor={isCursor}
             checked={checked}

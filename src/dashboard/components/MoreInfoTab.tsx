@@ -30,7 +30,7 @@ export function MoreInfoTab({
       else if (key.downArrow) setOrgCursor((c) => Math.min(orgOptions.length - 1, c + 1));
       else if (_input === " ") {
         const selected = orgOptions[orgCursor];
-        onChange({ ...selectedCipher, organizationId: selected.id, collectionIds: [] });
+        onChange({ ...selectedCipher, organizationId: selected?.id, collectionIds: [] });
       }
     },
     { isActive: isFocused && canChangeOrg },
