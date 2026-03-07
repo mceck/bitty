@@ -51,6 +51,42 @@ function normalizeBase32Secret(value: string): string {
   return value.replace(/\s+/g, "").toUpperCase();
 }
 
+function Field({
+  label,
+  value,
+  isFocused,
+  onChange,
+  isPassword,
+  labelWidth = 12,
+}: {
+  label: string;
+  value: string;
+  isFocused: boolean;
+  onChange?: (v: string) => void;
+  isPassword?: boolean;
+  labelWidth?: number;
+}) {
+  return (
+    <Box flexDirection="row">
+      <Box width={labelWidth} marginRight={2} flexShrink={0}>
+        <Text bold color={isFocused ? primaryLight : "gray"}>
+          {label}:
+        </Text>
+      </Box>
+      <Box flexGrow={1} paddingLeft={1}>
+        <TextInput
+          inline
+          isActive={isFocused}
+          isPassword={isPassword}
+          showPasswordOnFocus={isPassword}
+          value={value}
+          onChange={onChange}
+        />
+      </Box>
+    </Box>
+  );
+}
+
 export function MainTab({
   isFocused,
   selectedCipher,
@@ -120,45 +156,34 @@ export function MainTab({
       if (interval) clearInterval(interval);
     };
   }, [selectedCipher?.login?.totp]);
+
+  const updateIdentity = (patch: Partial<NonNullable<Cipher["identity"]>>) =>
+    onChange({ ...selectedCipher, identity: { ...selectedCipher.identity!, ...patch } });
+
+  const updateCard = (patch: Partial<NonNullable<Cipher["card"]>>) =>
+    onChange({ ...selectedCipher, card: { ...selectedCipher.card!, ...patch } });
+
   return (
     <Box flexDirection="column" gap={1}>
-      <Box flexDirection="row">
-        <Box width={12} marginRight={2} flexShrink={0}>
-          <Text bold color={isFocused ? primaryLight : "gray"}>
-            Name:
-          </Text>
-        </Box>
-        <Box flexGrow={1} paddingLeft={1}>
-          <TextInput
-            inline
-            isActive={isFocused}
-            value={selectedCipher.name}
-            onChange={(value) => onChange({ ...selectedCipher, name: value })}
-          />
-        </Box>
-      </Box>
+      <Field
+        label="Name"
+        value={selectedCipher.name}
+        isFocused={isFocused}
+        onChange={(value) => onChange({ ...selectedCipher, name: value })}
+      />
 
       {selectedCipher.type === CipherType.Login && (
-        <Box flexDirection="row">
-          <Box width={12} marginRight={2} flexShrink={0}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
-              Username:
-            </Text>
-          </Box>
-          <Box flexGrow={1} paddingLeft={1}>
-            <TextInput
-              inline
-              isActive={isFocused}
-              value={selectedCipher.login?.username ?? ""}
-              onChange={(value) =>
-                onChange({
-                  ...selectedCipher,
-                  login: { ...selectedCipher.login, username: value },
-                })
-              }
-            />
-          </Box>
-        </Box>
+        <Field
+          label="Username"
+          value={selectedCipher.login?.username ?? ""}
+          isFocused={isFocused}
+          onChange={(value) =>
+            onChange({
+              ...selectedCipher,
+              login: { ...selectedCipher.login, username: value },
+            })
+          }
+        />
       )}
 
       {selectedCipher.type === CipherType.Login && (
@@ -201,251 +226,287 @@ export function MainTab({
       )}
 
       {selectedCipher.type === CipherType.Login && (
-        <Box flexDirection="row">
-          <Box width={12} marginRight={2} flexShrink={0}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
-              URL:
-            </Text>
-          </Box>
-          <Box flexGrow={1} paddingLeft={1}>
-            <TextInput
-              inline
-              isActive={isFocused}
-              value={selectedCipher.login?.uris?.[0]?.uri ?? ""}
-              onChange={(value) =>
-                onChange({
-                  ...selectedCipher,
-                  login: {
-                    ...selectedCipher.login,
-                    uris: [
-                      { uri: value },
-                      ...selectedCipher.login!.uris!.slice(1),
-                    ],
-                  },
-                })
-              }
-            />
-          </Box>
-        </Box>
+        <Field
+          label="URL"
+          value={selectedCipher.login?.uris?.[0]?.uri ?? ""}
+          isFocused={isFocused}
+          onChange={(value) =>
+            onChange({
+              ...selectedCipher,
+              login: {
+                ...selectedCipher.login,
+                uris: [
+                  { uri: value },
+                  ...selectedCipher.login!.uris!.slice(1),
+                ],
+              },
+            })
+          }
+        />
       )}
 
-      {selectedCipher.type === CipherType.SSHKey && (
-        <Box flexDirection="row">
-          <Box width={12} marginRight={2} flexShrink={0}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
-              Private Key:
-            </Text>
+      {/* Card fields */}
+      {selectedCipher.type === CipherType.Card && (
+        <>
+          <Field
+            label="Cardholder"
+            value={selectedCipher.card?.cardholderName ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateCard({ cardholderName: v })}
+          />
+          <Field
+            label="Number"
+            value={selectedCipher.card?.number ?? ""}
+            isFocused={isFocused}
+            isPassword
+            onChange={(v) => updateCard({ number: v })}
+          />
+          <Field
+            label="Brand"
+            value={selectedCipher.card?.brand ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateCard({ brand: v })}
+          />
+          <Box flexDirection="row" gap={2}>
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  Exp Month:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.card?.expMonth ?? ""}
+                  onChange={(v) => updateCard({ expMonth: v })}
+                />
+              </Box>
+            </Box>
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={10} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  Exp Year:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.card?.expYear ?? ""}
+                  onChange={(v) => updateCard({ expYear: v })}
+                />
+              </Box>
+            </Box>
           </Box>
-          <Box flexGrow={1} paddingLeft={1}>
-            <TextInput
-              inline
-              isActive={isFocused}
-              value={selectedCipher.sshKey?.privateKey ?? ""}
-            />
-          </Box>
-        </Box>
-      )}
-      {selectedCipher.type === CipherType.SSHKey && (
-        <Box flexDirection="row">
-          <Box width={12} marginRight={2} flexShrink={0}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
-              Public Key:
-            </Text>
-          </Box>
-          <Box flexGrow={1} paddingLeft={1}>
-            <TextInput
-              inline
-              isActive={isFocused}
-              value={selectedCipher.sshKey?.publicKey ?? ""}
-            />
-          </Box>
-        </Box>
+          <Field
+            label="CVV"
+            value={selectedCipher.card?.code ?? ""}
+            isFocused={isFocused}
+            isPassword
+            onChange={(v) => updateCard({ code: v })}
+          />
+        </>
       )}
 
-      {selectedCipher.type === CipherType.Identity &&
-        selectedCipher.identity?.firstName && (
-          <Box flexDirection="row">
-            <Box width={12} marginRight={2} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
-                First Name:
-              </Text>
+      {/* Identity fields */}
+      {selectedCipher.type === CipherType.Identity && (
+        <>
+          <Box flexDirection="row" gap={2}>
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  Title:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.identity?.title ?? ""}
+                  onChange={(v) => updateIdentity({ title: v })}
+                />
+              </Box>
             </Box>
-            <Box flexGrow={1} paddingLeft={1}>
-              <TextInput
-                inline
-                isActive={isFocused}
-                value={selectedCipher.identity?.firstName ?? ""}
-                onChange={(value) =>
-                  onChange({
-                    ...selectedCipher,
-                    identity: { ...selectedCipher.identity!, firstName: value },
-                  })
-                }
-              />
-            </Box>
-          </Box>
-        )}
-      {selectedCipher.type === CipherType.Identity &&
-        selectedCipher.identity?.lastName && (
-          <Box flexDirection="row">
-            <Box width={12} marginRight={2} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
-                Last Name:
-              </Text>
-            </Box>
-            <Box flexGrow={1} paddingLeft={1}>
-              <TextInput
-                inline
-                isActive={isFocused}
-                value={selectedCipher.identity?.lastName ?? ""}
-                onChange={(value) =>
-                  onChange({
-                    ...selectedCipher,
-                    identity: { ...selectedCipher.identity!, lastName: value },
-                  })
-                }
-              />
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  First Name:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.identity?.firstName ?? ""}
+                  onChange={(v) => updateIdentity({ firstName: v })}
+                />
+              </Box>
             </Box>
           </Box>
-        )}
-      {selectedCipher.type === CipherType.Identity &&
-        selectedCipher.identity?.username && (
-          <Box flexDirection="row">
-            <Box width={12} marginRight={2} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
-                Username:
-              </Text>
+          <Box flexDirection="row" gap={2}>
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  Middle:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.identity?.middleName ?? ""}
+                  onChange={(v) => updateIdentity({ middleName: v })}
+                />
+              </Box>
             </Box>
-            <Box flexGrow={1} paddingLeft={1}>
-              <TextInput
-                inline
-                isActive={isFocused}
-                value={selectedCipher.identity?.username ?? ""}
-                onChange={(value) =>
-                  onChange({
-                    ...selectedCipher,
-                    identity: { ...selectedCipher.identity!, username: value },
-                  })
-                }
-              />
-            </Box>
-          </Box>
-        )}
-      {selectedCipher.type === CipherType.Identity &&
-        selectedCipher.identity?.city && (
-          <Box flexDirection="row">
-            <Box width={12} marginRight={2} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
-                City:
-              </Text>
-            </Box>
-            <Box flexGrow={1} paddingLeft={1}>
-              <TextInput
-                inline
-                isActive={isFocused}
-                value={selectedCipher.identity?.city ?? ""}
-                onChange={(value) =>
-                  onChange({
-                    ...selectedCipher,
-                    identity: { ...selectedCipher.identity!, city: value },
-                  })
-                }
-              />
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  Last Name:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.identity?.lastName ?? ""}
+                  onChange={(v) => updateIdentity({ lastName: v })}
+                />
+              </Box>
             </Box>
           </Box>
-        )}
-      {selectedCipher.type === CipherType.Identity &&
-        selectedCipher.identity?.address1 && (
-          <Box flexDirection="row">
-            <Box width={12} marginRight={2} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
-                Address:
-              </Text>
+          <Field
+            label="Username"
+            value={selectedCipher.identity?.username ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateIdentity({ username: v })}
+          />
+          <Field
+            label="Company"
+            value={selectedCipher.identity?.company ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateIdentity({ company: v })}
+          />
+          <Field
+            label="Email"
+            value={selectedCipher.identity?.email ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateIdentity({ email: v })}
+          />
+          <Field
+            label="Phone"
+            value={selectedCipher.identity?.phone ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateIdentity({ phone: v })}
+          />
+          <Field
+            label="Address"
+            value={selectedCipher.identity?.address1 ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateIdentity({ address1: v })}
+          />
+          <Box flexDirection="row" gap={2}>
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  City:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.identity?.city ?? ""}
+                  onChange={(v) => updateIdentity({ city: v })}
+                />
+              </Box>
             </Box>
-            <Box flexGrow={1} paddingLeft={1}>
-              <TextInput
-                inline
-                isActive={isFocused}
-                value={selectedCipher.identity?.address1 ?? ""}
-                onChange={(value) =>
-                  onChange({
-                    ...selectedCipher,
-                    identity: { ...selectedCipher.identity!, address1: value },
-                  })
-                }
-              />
-            </Box>
-          </Box>
-        )}
-      {selectedCipher.type === CipherType.Identity &&
-        selectedCipher.identity?.country && (
-          <Box flexDirection="row">
-            <Box width={12} marginRight={2} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
-                Country:
-              </Text>
-            </Box>
-            <Box flexGrow={1} paddingLeft={1}>
-              <TextInput
-                inline
-                isActive={isFocused}
-                value={selectedCipher.identity?.country ?? ""}
-                onChange={(value) =>
-                  onChange({
-                    ...selectedCipher,
-                    identity: { ...selectedCipher.identity!, country: value },
-                  })
-                }
-              />
-            </Box>
-          </Box>
-        )}
-      {selectedCipher.type === CipherType.Identity &&
-        selectedCipher.identity?.email && (
-          <Box flexDirection="row">
-            <Box width={12} marginRight={2} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
-                Email:
-              </Text>
-            </Box>
-            <Box flexGrow={1} paddingLeft={1}>
-              <TextInput
-                inline
-                isActive={isFocused}
-                value={selectedCipher.identity?.email ?? ""}
-                onChange={(value) =>
-                  onChange({
-                    ...selectedCipher,
-                    identity: { ...selectedCipher.identity!, email: value },
-                  })
-                }
-              />
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  State:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.identity?.state ?? ""}
+                  onChange={(v) => updateIdentity({ state: v })}
+                />
+              </Box>
             </Box>
           </Box>
-        )}
-      {selectedCipher.type === CipherType.Identity &&
-        selectedCipher.identity?.phone && (
-          <Box flexDirection="row">
-            <Box width={12} marginRight={2} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
-                Phone:
-              </Text>
+          <Box flexDirection="row" gap={2}>
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  Zip:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.identity?.postalCode ?? ""}
+                  onChange={(v) => updateIdentity({ postalCode: v })}
+                />
+              </Box>
             </Box>
-            <Box flexGrow={1} paddingLeft={1}>
-              <TextInput
-                inline
-                isActive={isFocused}
-                value={selectedCipher.identity?.phone ?? ""}
-                onChange={(value) =>
-                  onChange({
-                    ...selectedCipher,
-                    identity: { ...selectedCipher.identity!, phone: value },
-                  })
-                }
-              />
+            <Box flexDirection="row" flexGrow={1}>
+              <Box width={12} marginRight={2} flexShrink={0}>
+                <Text bold color={isFocused ? primaryLight : "gray"}>
+                  Country:
+                </Text>
+              </Box>
+              <Box flexGrow={1} paddingLeft={1}>
+                <TextInput
+                  inline
+                  isActive={isFocused}
+                  value={selectedCipher.identity?.country ?? ""}
+                  onChange={(v) => updateIdentity({ country: v })}
+                />
+              </Box>
             </Box>
           </Box>
-        )}
+          <Field
+            label="SSN"
+            value={selectedCipher.identity?.ssn ?? ""}
+            isFocused={isFocused}
+            isPassword
+            onChange={(v) => updateIdentity({ ssn: v })}
+          />
+          <Field
+            label="Passport"
+            value={selectedCipher.identity?.passportNumber ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateIdentity({ passportNumber: v })}
+          />
+          <Field
+            label="License"
+            value={selectedCipher.identity?.licenseNumber ?? ""}
+            isFocused={isFocused}
+            onChange={(v) => updateIdentity({ licenseNumber: v })}
+          />
+        </>
+      )}
+
+      {/* SSH Key fields */}
+      {selectedCipher.type === CipherType.SSHKey && (
+        <>
+          <Field
+            label="Private Key"
+            value={selectedCipher.sshKey?.privateKey ?? ""}
+            isFocused={isFocused}
+          />
+          <Field
+            label="Public Key"
+            value={selectedCipher.sshKey?.publicKey ?? ""}
+            isFocused={isFocused}
+          />
+        </>
+      )}
 
       <Box flexDirection="row">
         <Box width={12} flexShrink={0} marginRight={2}>

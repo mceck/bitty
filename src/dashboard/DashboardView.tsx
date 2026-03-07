@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo } from "react";
 import { Box, Text, useFocusManager, useInput, useStdout } from "ink";
 import { TextInput } from "../components/TextInput.js";
 import { VaultList } from "./components/VaultList.js";
-import { CipherDetail } from "./components/CipherDetail.js";
+import { CipherDetail, DetailTab } from "./components/CipherDetail.js";
 import { HelpBar } from "./components/HelpBar.js";
-import { primary } from "../theme/style.js";
+import { primary, primaryLight } from "../theme/style.js";
 import { bwClient, clearConfig, emptyCipher, useBwSync } from "../hooks/bw.js";
 import { Cipher, SyncResponse } from "../clients/bw.js";
 import { useStatusMessage } from "../hooks/status-message.js";
 import { useMouseSubscribe } from "../hooks/use-mouse.js";
+import { Button } from "../components/Button.js";
 
 type Props = {
   onLogout: () => void;
@@ -27,6 +28,7 @@ export function DashboardView({ onLogout }: Props) {
     useState<FocusableComponent>("list");
   const [detailMode, setDetailMode] = useState<DetailViewMode>("view");
   const [editedCipher, setEditedCipher] = useState<Cipher | null>(null);
+  const [activeTab, setActiveTab] = useState<DetailTab>("main");
   const { focus, focusNext } = useFocusManager();
   const { stdout } = useStdout();
   const { statusMessage, statusMessageColor, showStatusMessage } =
@@ -55,6 +57,11 @@ export function DashboardView({ onLogout }: Props) {
 
   const selectedCipher =
     detailMode === "new" ? editedCipher : filteredCiphers[listIndex];
+
+  const writableCollections = useMemo(
+    () => (syncState?.collections ?? []).filter((c) => !c.readOnly),
+    [syncState]
+  );
 
   const logout = async () => {
     bwClient.logout();
@@ -96,6 +103,7 @@ export function DashboardView({ onLogout }: Props) {
       setDetailMode("new");
       setEditedCipher(emptyCipher);
       setFocusedComponent("detail");
+      setActiveTab("main");
       setShowDetails(false);
       return;
     }
@@ -103,6 +111,7 @@ export function DashboardView({ onLogout }: Props) {
     if (key.escape) {
       setFocusedComponent("list");
       setDetailMode("view");
+      setActiveTab("main");
     }
 
     if (focusedComponent === "search") {
@@ -157,11 +166,37 @@ export function DashboardView({ onLogout }: Props) {
             }}
           />
         </Box>
-        {statusMessage && (
-          <Box width="60%" padding={1}>
-            <Text color={statusMessageColor}>{statusMessage}</Text>
-          </Box>
-        )}
+        <Box width="60%" paddingX={1} justifyContent="space-between">
+          {statusMessage ? (
+            <Box padding={1} flexShrink={1}>
+              <Text color={statusMessageColor}>{statusMessage}</Text>
+            </Box>
+          ) : (
+            <Box />
+          )}
+          {selectedCipher && (
+            <Box gap={1} flexShrink={0}>
+              <Button
+                isActive={focusedComponent === "detail"}
+                onClick={() => setActiveTab(activeTab === "more" ? "main" : "more")}
+              >
+                <Text color={activeTab === "more" ? primaryLight : undefined}>More</Text>
+              </Button>
+              {!!writableCollections.length && (
+                <Button
+                  isActive={focusedComponent === "detail"}
+                  onClick={() =>
+                    setActiveTab(activeTab === "collections" ? "main" : "collections")
+                  }
+                >
+                  <Text color={activeTab === "collections" ? primaryLight : undefined}>
+                    Collections
+                  </Text>
+                </Button>
+              )}
+            </Box>
+          )}
+        </Box>
       </Box>
 
       <Box minHeight={20} flexGrow={1}>
@@ -175,6 +210,8 @@ export function DashboardView({ onLogout }: Props) {
         <CipherDetail
           selectedCipher={showDetails ? selectedCipher : null}
           mode={detailMode}
+          activeTab={activeTab}
+          collections={writableCollections}
           isFocused={focusedComponent === "detail"}
           onChange={(cipher) => {
             if (detailMode === "new") {
@@ -195,6 +232,7 @@ export function DashboardView({ onLogout }: Props) {
                 showStatusMessage("Saved!", "success");
                 setDetailMode("view");
                 setFocusedComponent("list");
+                setActiveTab("main");
               } catch (e) {
                 showStatusMessage("Synchronization error", "error");
               }
@@ -208,6 +246,7 @@ export function DashboardView({ onLogout }: Props) {
                 fetchSync();
                 showStatusMessage("Saved!", "success");
                 setFocusedComponent("list");
+                setActiveTab("main");
               } catch (e) {
                 showStatusMessage("Synchronization error", "error");
               }

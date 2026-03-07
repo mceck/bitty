@@ -1,26 +1,30 @@
 import { Box } from "ink";
 import { primaryLight } from "../../theme/style.js";
-import { Cipher, CipherType } from "../../clients/bw.js";
+import { Cipher, CipherType, Collection } from "../../clients/bw.js";
 import { Button } from "../../components/Button.js";
-import { useState } from "react";
 import { MoreInfoTab } from "./MoreInfoTab.js";
 import { MainTab } from "./MainTab.js";
+import { CollectionsTab } from "./CollectionsTab.js";
+
+export type DetailTab = "main" | "more" | "collections";
 
 export function CipherDetail({
   selectedCipher,
   isFocused,
   mode,
+  activeTab,
+  collections,
   onChange,
   onSave,
 }: {
   selectedCipher: Cipher | null | undefined;
   isFocused: boolean;
   mode: "view" | "new";
+  activeTab: DetailTab;
+  collections: Collection[];
   onChange: (cipher: Cipher) => void;
   onSave: (cipher: Cipher) => void;
 }) {
-  const [isMoreInfoTab, setIsMoreInfoTab] = useState(false);
-
   return (
     <Box
       flexDirection="column"
@@ -33,10 +37,17 @@ export function CipherDetail({
     >
       {selectedCipher && (
         <Box flexDirection="column" justifyContent="space-between" flexGrow={1}>
-          {isMoreInfoTab ? (
+          {activeTab === "more" ? (
             <MoreInfoTab
               isFocused={isFocused}
               selectedCipher={selectedCipher}
+              onChange={onChange}
+            />
+          ) : activeTab === "collections" ? (
+            <CollectionsTab
+              isFocused={isFocused}
+              selectedCipher={selectedCipher}
+              collections={collections}
               onChange={onChange}
             />
           ) : (
@@ -47,19 +58,10 @@ export function CipherDetail({
             />
           )}
           <Box marginTop={1} flexShrink={0} gap={1}>
-            {mode !== "new" && (
-              <Button
-                width="50%"
-                isActive={isFocused}
-                onClick={() => setIsMoreInfoTab(!isMoreInfoTab)}
-              >
-                More
-              </Button>
-            )}
             {selectedCipher.type !== CipherType.SSHKey && (
               <Button
                 doubleConfirm
-                width="50%"
+                width="100%"
                 isActive={isFocused}
                 onClick={() => onSave(selectedCipher!)}
               >

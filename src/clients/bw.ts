@@ -97,6 +97,14 @@ export interface Cipher {
     totp?: string | null;
     currentTotp?: string | null;
   };
+  card?: {
+    cardholderName: string | null;
+    brand: string | null;
+    number: string | null;
+    expMonth: string | null;
+    expYear: string | null;
+    code: string | null;
+  };
   identity?: {
     address1: string | null;
     address2: string | null;
@@ -125,6 +133,13 @@ export interface Cipher {
   fields?: { name: string; value: string; type: number }[];
 }
 
+export interface Collection {
+  id: string;
+  organizationId: string;
+  name: string;
+  readOnly: boolean;
+}
+
 export type CipherDto = Omit<Cipher, "id" | "data">;
 
 export enum KdfType {
@@ -134,6 +149,7 @@ export enum KdfType {
 
 export interface SyncResponse {
   ciphers: Cipher[];
+  collections?: Collection[];
   profile?: {
     organizations?: { id: string; name: string; key: string }[];
   };
@@ -676,6 +692,13 @@ export class Client {
     }
     this.decryptedSyncCache = {
       ...this.syncCache,
+      collections: this.syncCache!.collections?.map((col) => {
+        const orgKey = this.orgKeys[col.organizationId];
+        return {
+          ...col,
+          name: orgKey ? this.decrypt(col.name, orgKey) ?? col.name : col.name,
+        };
+      }),
       ciphers: this.syncCache!.ciphers.map((cipher) => {
         const key = this.getDecryptionKey(cipher);
         const ret = JSON.parse(JSON.stringify(cipher));
@@ -744,6 +767,22 @@ export class Client {
               this.decrypt(cipher.identity.username, key),
           };
         }
+        if (cipher.card) {
+          ret.card = {
+            cardholderName:
+              cipher.card.cardholderName &&
+              this.decrypt(cipher.card.cardholderName, key),
+            brand:
+              cipher.card.brand && this.decrypt(cipher.card.brand, key),
+            number:
+              cipher.card.number && this.decrypt(cipher.card.number, key),
+            expMonth:
+              cipher.card.expMonth && this.decrypt(cipher.card.expMonth, key),
+            expYear:
+              cipher.card.expYear && this.decrypt(cipher.card.expYear, key),
+            code: cipher.card.code && this.decrypt(cipher.card.code, key),
+          };
+        }
         if (cipher.sshKey) {
           ret.sshKey = {
             keyFingerprint:
@@ -799,13 +838,21 @@ export class Client {
 
   async createSecret(obj: CipherDto) {
     const key = this.getDecryptionKey(obj);
-    const s = await fetchApi(`${this.apiUrl}/ciphers`, {
+    const encrypted = this.encryptCipher(obj, key);
+    const hasCollections = obj.collectionIds?.length;
+    const url = hasCollections
+      ? `${this.apiUrl}/ciphers/create`
+      : `${this.apiUrl}/ciphers`;
+    const body = hasCollections
+      ? { cipher: encrypted, collectionIds: obj.collectionIds }
+      : encrypted;
+    const s = await fetchApi(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(this.encryptCipher(obj, key)),
+      body: JSON.stringify(body),
     });
     return s.json();
   }
@@ -952,6 +999,28 @@ export class Client {
         username: ret.identity.username
           ? this.encrypt(ret.identity.username, key)
           : ret.identity.username,
+      };
+    }
+    if (ret.card) {
+      ret.card = {
+        cardholderName: ret.card.cardholderName
+          ? this.encrypt(ret.card.cardholderName, key)
+          : ret.card.cardholderName,
+        brand: ret.card.brand
+          ? this.encrypt(ret.card.brand, key)
+          : ret.card.brand,
+        number: ret.card.number
+          ? this.encrypt(ret.card.number, key)
+          : ret.card.number,
+        expMonth: ret.card.expMonth
+          ? this.encrypt(ret.card.expMonth, key)
+          : ret.card.expMonth,
+        expYear: ret.card.expYear
+          ? this.encrypt(ret.card.expYear, key)
+          : ret.card.expYear,
+        code: ret.card.code
+          ? this.encrypt(ret.card.code, key)
+          : ret.card.code,
       };
     }
     if (ret.login) {

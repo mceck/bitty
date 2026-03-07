@@ -154,4 +154,5 @@ export const emptyCipher: any = {
   },
   fields: [],
   organizationId: null,
+  collectionIds: [],
 };
