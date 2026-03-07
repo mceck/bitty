@@ -1089,6 +1089,9 @@ export class Client {
         password: ret.login.password
           ? this.encrypt(ret.login.password, key)
           : ret.login.password,
+        totp: ret.login.totp
+          ? this.encrypt(ret.login.totp, key)
+          : ret.login.totp,
         uri: ret.login.uri ? this.encrypt(ret.login.uri, key) : ret.login.uri,
         uris: ret.login.uris?.map((uri) => ({
           uri: uri.uri ? this.encrypt(uri.uri, key) : uri.uri,

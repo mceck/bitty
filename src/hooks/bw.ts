@@ -146,6 +146,7 @@ export const useBwSync = () => {
 const emptyLogin = {
   username: null,
   password: null,
+  totp: null,
   uris: [],
 };
 

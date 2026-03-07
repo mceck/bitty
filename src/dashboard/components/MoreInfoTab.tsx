@@ -52,6 +52,30 @@ export function MoreInfoTab({
           />
         </Box>
       </Box>
+      {selectedCipher.type === CipherType.Login && (
+        <Box flexDirection="row">
+          <Box width={9} flexShrink={0}>
+            <Text bold color={isFocused ? primaryLight : "gray"}>
+              TOTP:
+            </Text>
+          </Box>
+          <Box flexGrow={1}>
+            <TextInput
+              inline
+              isActive={isFocused}
+              isPassword
+              showPasswordOnFocus
+              value={selectedCipher.login?.totp ?? ""}
+              onChange={(value) =>
+                onChange({
+                  ...selectedCipher,
+                  login: { ...selectedCipher.login, totp: value },
+                })
+              }
+            />
+          </Box>
+        </Box>
+      )}
       {canChangeOrg && organizations.length > 0 && (
         <Box flexDirection="column">
           <Text bold color={isFocused ? primaryLight : "gray"}>
