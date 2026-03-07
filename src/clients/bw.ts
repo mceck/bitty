@@ -911,6 +911,21 @@ export class Client {
     return s.json();
   }
 
+  async updateCollections(id: string, collectionIds: string[]) {
+    await this.checkToken();
+    const s = await fetchApi(`${this.apiUrl}/ciphers/${id}/collections_v2`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ collectionIds }),
+    });
+    this.decryptedSyncCache = null;
+    this.syncCache = null;
+    return s.json();
+  }
+
   encrypt(value: string | null, key?: any): string {
     if (!value) return value!;
     const enc = mcbw.encrypt(value, key ?? this.keys.userKey);

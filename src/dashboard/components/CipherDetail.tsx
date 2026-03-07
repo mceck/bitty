@@ -1,6 +1,6 @@
 import { Box } from "ink";
 import { primaryLight } from "../../theme/style.js";
-import { Cipher, CipherType, Collection } from "../../clients/bw.js";
+import { Cipher, Collection } from "../../clients/bw.js";
 import { Button } from "../../components/Button.js";
 import { MoreInfoTab } from "./MoreInfoTab.js";
 import { MainTab } from "./MainTab.js";
@@ -58,16 +58,14 @@ export function CipherDetail({
             />
           )}
           <Box marginTop={1} flexShrink={0} gap={1}>
-            {selectedCipher.type !== CipherType.SSHKey && (
-              <Button
-                doubleConfirm
-                width="100%"
-                isActive={isFocused}
-                onClick={() => onSave(selectedCipher!)}
-              >
-                Save
-              </Button>
-            )}
+            <Button
+              doubleConfirm
+              width="100%"
+              isActive={isFocused}
+              onClick={() => onSave(selectedCipher!)}
+            >
+              Save
+            </Button>
           </Box>
         </Box>
       )}

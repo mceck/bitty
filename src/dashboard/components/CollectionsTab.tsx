@@ -24,7 +24,7 @@ export function CollectionsTab({
         setCursor((c) => Math.max(0, c - 1));
       } else if (key.downArrow) {
         setCursor((c) => Math.min(collections.length - 1, c + 1));
-      } else if (key.return || _input === " ") {
+      } else if (_input === " ") {
         const col = collections[cursor];
         if (!col) return;
         const has = selected.includes(col.id);

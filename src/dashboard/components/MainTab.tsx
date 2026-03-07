@@ -376,64 +376,34 @@ export function MainTab({
               </Box>
             </Box>
           </Box>
-          <Field
-            label="Username"
-            value={selectedCipher.identity?.username ?? ""}
-            isFocused={isFocused}
-            onChange={(v) => updateIdentity({ username: v })}
-          />
-          <Field
-            label="Company"
-            value={selectedCipher.identity?.company ?? ""}
-            isFocused={isFocused}
-            onChange={(v) => updateIdentity({ company: v })}
-          />
-          <Field
-            label="Email"
-            value={selectedCipher.identity?.email ?? ""}
-            isFocused={isFocused}
-            onChange={(v) => updateIdentity({ email: v })}
-          />
-          <Field
-            label="Phone"
-            value={selectedCipher.identity?.phone ?? ""}
-            isFocused={isFocused}
-            onChange={(v) => updateIdentity({ phone: v })}
-          />
-          <Field
-            label="Address"
-            value={selectedCipher.identity?.address1 ?? ""}
-            isFocused={isFocused}
-            onChange={(v) => updateIdentity({ address1: v })}
-          />
           <Box flexDirection="row" gap={2}>
             <Box flexDirection="row" flexGrow={1}>
               <Box width={12} marginRight={2} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
-                  City:
+                  Username:
                 </Text>
               </Box>
               <Box flexGrow={1} paddingLeft={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
-                  value={selectedCipher.identity?.city ?? ""}
-                  onChange={(v) => updateIdentity({ city: v })}
+                  value={selectedCipher.identity?.username ?? ""}
+                  onChange={(v) => updateIdentity({ username: v })}
                 />
               </Box>
             </Box>
             <Box flexDirection="row" flexGrow={1}>
               <Box width={12} marginRight={2} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
-                  State:
+                  Company:
                 </Text>
               </Box>
               <Box flexGrow={1} paddingLeft={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
-                  value={selectedCipher.identity?.state ?? ""}
-                  onChange={(v) => updateIdentity({ state: v })}
+                  value={selectedCipher.identity?.company ?? ""}
+                  onChange={(v) => updateIdentity({ company: v })}
                 />
               </Box>
             </Box>
@@ -442,53 +412,34 @@ export function MainTab({
             <Box flexDirection="row" flexGrow={1}>
               <Box width={12} marginRight={2} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
-                  Zip:
+                  Email:
                 </Text>
               </Box>
               <Box flexGrow={1} paddingLeft={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
-                  value={selectedCipher.identity?.postalCode ?? ""}
-                  onChange={(v) => updateIdentity({ postalCode: v })}
+                  value={selectedCipher.identity?.email ?? ""}
+                  onChange={(v) => updateIdentity({ email: v })}
                 />
               </Box>
             </Box>
             <Box flexDirection="row" flexGrow={1}>
               <Box width={12} marginRight={2} flexShrink={0}>
                 <Text bold color={isFocused ? primaryLight : "gray"}>
-                  Country:
+                  Phone:
                 </Text>
               </Box>
               <Box flexGrow={1} paddingLeft={1}>
                 <TextInput
                   inline
                   isActive={isFocused}
-                  value={selectedCipher.identity?.country ?? ""}
-                  onChange={(v) => updateIdentity({ country: v })}
+                  value={selectedCipher.identity?.phone ?? ""}
+                  onChange={(v) => updateIdentity({ phone: v })}
                 />
               </Box>
             </Box>
           </Box>
-          <Field
-            label="SSN"
-            value={selectedCipher.identity?.ssn ?? ""}
-            isFocused={isFocused}
-            isPassword
-            onChange={(v) => updateIdentity({ ssn: v })}
-          />
-          <Field
-            label="Passport"
-            value={selectedCipher.identity?.passportNumber ?? ""}
-            isFocused={isFocused}
-            onChange={(v) => updateIdentity({ passportNumber: v })}
-          />
-          <Field
-            label="License"
-            value={selectedCipher.identity?.licenseNumber ?? ""}
-            isFocused={isFocused}
-            onChange={(v) => updateIdentity({ licenseNumber: v })}
-          />
         </>
       )}
 

@@ -4,12 +4,12 @@ import { TextInput } from "../components/TextInput.js";
 import { VaultList } from "./components/VaultList.js";
 import { CipherDetail, DetailTab } from "./components/CipherDetail.js";
 import { HelpBar } from "./components/HelpBar.js";
-import { primary, primaryLight } from "../theme/style.js";
+import { primary } from "../theme/style.js";
 import { bwClient, clearConfig, emptyCipher, useBwSync } from "../hooks/bw.js";
 import { Cipher, SyncResponse } from "../clients/bw.js";
 import { useStatusMessage } from "../hooks/status-message.js";
 import { useMouseSubscribe } from "../hooks/use-mouse.js";
-import { Button } from "../components/Button.js";
+import { TabButton } from "../components/TabButton.js";
 
 type Props = {
   onLogout: () => void;
@@ -176,23 +176,21 @@ export function DashboardView({ onLogout }: Props) {
           )}
           {selectedCipher && (
             <Box gap={1} flexShrink={0}>
-              <Button
-                isActive={focusedComponent === "detail"}
+              <TabButton
+                active={activeTab === "more"}
                 onClick={() => setActiveTab(activeTab === "more" ? "main" : "more")}
               >
-                <Text color={activeTab === "more" ? primaryLight : undefined}>More</Text>
-              </Button>
+                More
+              </TabButton>
               {!!writableCollections.length && (
-                <Button
-                  isActive={focusedComponent === "detail"}
+                <TabButton
+                  active={activeTab === "collections"}
                   onClick={() =>
                     setActiveTab(activeTab === "collections" ? "main" : "collections")
                   }
                 >
-                  <Text color={activeTab === "collections" ? primaryLight : undefined}>
-                    Collections
-                  </Text>
-                </Button>
+                  Collections
+                </TabButton>
               )}
             </Box>
           )}
@@ -239,7 +237,16 @@ export function DashboardView({ onLogout }: Props) {
             } else {
               try {
                 const updated = await bwClient.updateSecret(cipher.id, cipher);
-                if (!updated) {
+                const originalCollections =
+                  sync?.ciphers.find((c) => c.id === cipher.id)?.collectionIds ?? [];
+                const newCollections = cipher.collectionIds ?? [];
+                const collectionsChanged =
+                  originalCollections.length !== newCollections.length ||
+                  originalCollections.some((id) => !newCollections.includes(id));
+                if (collectionsChanged) {
+                  await bwClient.updateCollections(cipher.id, newCollections);
+                }
+                if (!updated && !collectionsChanged) {
                   showStatusMessage("Nothing to save");
                   return;
                 }
