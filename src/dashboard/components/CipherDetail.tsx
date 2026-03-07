@@ -1,6 +1,6 @@
 import { Box } from "ink";
 import { primaryLight } from "../../theme/style.js";
-import { Cipher, Collection } from "../../clients/bw.js";
+import { Cipher, CipherType, Collection } from "../../clients/bw.js";
 import { Button } from "../../components/Button.js";
 import { MoreInfoTab } from "./MoreInfoTab.js";
 import { MainTab } from "./MainTab.js";
@@ -17,6 +17,7 @@ export function CipherDetail({
   onChange,
   onSave,
   onDelete,
+  onTypeChange,
 }: {
   selectedCipher: Cipher | null | undefined;
   isFocused: boolean;
@@ -26,6 +27,7 @@ export function CipherDetail({
   onChange: (cipher: Cipher) => void;
   onSave: (cipher: Cipher) => void;
   onDelete: (cipher: Cipher) => void;
+  onTypeChange?: (type: CipherType) => void;
 }) {
   return (
     <Box
@@ -56,7 +58,9 @@ export function CipherDetail({
             <MainTab
               isFocused={isFocused}
               selectedCipher={selectedCipher}
+              mode={mode}
               onChange={onChange}
+              onTypeChange={onTypeChange}
             />
           )}
           <Box marginTop={1} flexShrink={0} gap={1}>

@@ -143,16 +143,63 @@ export const useBwSync = () => {
   return { sync, error, fetchSync };
 };
 
-export const emptyCipher: any = {
-  name: "",
-  type: CipherType.Login,
-  notes: null,
-  login: {
-    username: null,
-    password: null,
-    uris: [],
-  },
-  fields: [],
-  organizationId: null,
-  collectionIds: [],
+const emptyLogin = {
+  username: null,
+  password: null,
+  uris: [],
 };
+
+const emptyCard = {
+  cardholderName: null,
+  brand: null,
+  number: null,
+  expMonth: null,
+  expYear: null,
+  code: null,
+};
+
+const emptyIdentity = {
+  title: null,
+  firstName: null,
+  middleName: null,
+  lastName: null,
+  username: null,
+  company: null,
+  email: null,
+  phone: null,
+  address1: null,
+  address2: null,
+  address3: null,
+  city: null,
+  state: null,
+  postalCode: null,
+  country: null,
+  ssn: null,
+  passportNumber: null,
+  licenseNumber: null,
+};
+
+export function createEmptyCipher(type: CipherType = CipherType.Login): any {
+  const base = {
+    name: "",
+    type,
+    notes: null,
+    fields: [],
+    organizationId: null,
+    collectionIds: [],
+  };
+  switch (type) {
+    case CipherType.Login:
+      return { ...base, login: { ...emptyLogin } };
+    case CipherType.SecureNote:
+      return base;
+    case CipherType.Card:
+      return { ...base, card: { ...emptyCard } };
+    case CipherType.Identity:
+      return { ...base, identity: { ...emptyIdentity } };
+    default:
+      return base;
+  }
+}
+
+export const emptyCipher: any = createEmptyCipher();

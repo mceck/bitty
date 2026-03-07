@@ -2,6 +2,7 @@ import { Box, Text } from "ink";
 import { Cipher, CipherType } from "../../clients/bw.js";
 import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
+import { TabButton } from "../../components/TabButton.js";
 import { useEffect, useState } from "react";
 import { createGuardrails, generate, stringToBytes } from "otplib";
 const OTP_INTERVAL = 30;
@@ -94,11 +95,15 @@ function Field({
 export function MainTab({
   isFocused,
   selectedCipher,
+  mode,
   onChange,
+  onTypeChange,
 }: {
   isFocused: boolean;
   selectedCipher: Cipher;
+  mode: "view" | "new";
   onChange: (cipher: Cipher) => void;
+  onTypeChange?: (type: CipherType) => void;
 }) {
   const [otpCode, setOtpCode] = useState("");
   const [otpTimeout, setOtpTimeout] = useState(0);
@@ -169,6 +174,30 @@ export function MainTab({
 
   return (
     <Box flexDirection="column" gap={1}>
+      {mode === "new" && (
+        <Box flexDirection="row" gap={1}>
+          <Box width={12} flexShrink={0}>
+            <Text bold color={isFocused ? primaryLight : "gray"}>
+              Type:
+            </Text>
+          </Box>
+          {([
+            [CipherType.Login, "Login"],
+            [CipherType.SecureNote, "Note"],
+            [CipherType.Card, "Card"],
+            [CipherType.Identity, "Identity"],
+          ] as const).map(([t, label]) => (
+            <TabButton
+              key={t}
+              active={selectedCipher.type === t}
+              onClick={() => onTypeChange?.(t)}
+            >
+              {label}
+            </TabButton>
+          ))}
+        </Box>
+      )}
+
       <Field
         label="Name"
         labelWidth={selectedCipher.type === CipherType.SSHKey ? 13 : 12}

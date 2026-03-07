@@ -5,8 +5,8 @@ import { VaultList } from "./components/VaultList.js";
 import { CipherDetail, DetailTab } from "./components/CipherDetail.js";
 import { HelpBar } from "./components/HelpBar.js";
 import { primary } from "../theme/style.js";
-import { bwClient, clearConfig, emptyCipher, useBwSync } from "../hooks/bw.js";
-import { Cipher, SyncResponse } from "../clients/bw.js";
+import { bwClient, clearConfig, createEmptyCipher, emptyCipher, useBwSync } from "../hooks/bw.js";
+import { Cipher, CipherType, SyncResponse } from "../clients/bw.js";
 import { useStatusMessage } from "../hooks/status-message.js";
 import { useMouseSubscribe } from "../hooks/use-mouse.js";
 import { TabButton } from "../components/TabButton.js";
@@ -211,6 +211,14 @@ export function DashboardView({ onLogout }: Props) {
           activeTab={activeTab}
           collections={writableCollections}
           isFocused={focusedComponent === "detail"}
+          onTypeChange={(type) => {
+            const fresh = createEmptyCipher(type);
+            fresh.name = editedCipher?.name ?? "";
+            fresh.notes = editedCipher?.notes ?? null;
+            fresh.collectionIds = editedCipher?.collectionIds ?? [];
+            fresh.organizationId = editedCipher?.organizationId ?? null;
+            setEditedCipher(fresh);
+          }}
           onChange={(cipher) => {
             if (detailMode === "new") {
               setEditedCipher(cipher);
