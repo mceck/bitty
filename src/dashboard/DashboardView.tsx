@@ -229,6 +229,11 @@ export function DashboardView({ onLogout }: Props) {
             fresh.organizationId = editedCipher?.organizationId ?? null;
             setEditedCipher(fresh);
           }}
+          onReset={async ()=>{
+            bwClient.decryptedSyncCache = null;
+            await fetchSync(false);
+            showStatusMessage("Resetted", "success");
+          }}
           onChange={(cipher) => {
             if (detailMode === "new") {
               setEditedCipher(cipher);

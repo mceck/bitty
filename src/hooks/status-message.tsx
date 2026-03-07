@@ -1,11 +1,13 @@
 import { createContext, useContext, useRef, useState } from "react";
 
+type StatusMessageType = "info" | "error" | "warning" | "success";
+
 const statusMessageContext = createContext<{
   statusMessage: string | null;
   statusMessageColor: string;
   showStatusMessage: (
     message: string,
-    type?: "info" | "error" | "success",
+    type?: StatusMessageType,
     timeoutMs?: number
   ) => void;
 }>({
@@ -22,14 +24,12 @@ export const StatusMessageProvider = ({
   children: React.ReactNode;
 }) => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [messageType, setMessageType] = useState<"info" | "error" | "success">(
-    "info"
-  );
+  const [messageType, setMessageType] = useState<StatusMessageType>("info");
   const timeout = useRef<NodeJS.Timeout | null>(null);
 
   const showStatusMessage = (
     message: string,
-    type: "info" | "error" | "success" = "info",
+    type: StatusMessageType = "info",
     timeoutMs: number = 3000
   ) => {
     setStatusMessage(message);
@@ -46,6 +46,8 @@ export const StatusMessageProvider = ({
       ? "red"
       : messageType === "success"
       ? "green"
+      : messageType === "warning"
+      ? "yellow"
       : "gray";
 
   return (

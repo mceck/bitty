@@ -18,6 +18,7 @@ export function CipherDetail({
   onChange,
   onSave,
   onDelete,
+  onReset,
   onTypeChange,
 }: {
   selectedCipher: Cipher | null | undefined;
@@ -29,6 +30,7 @@ export function CipherDetail({
   onChange: (cipher: Cipher) => void;
   onSave: (cipher: Cipher) => void;
   onDelete: (cipher: Cipher) => void;
+  onReset: () => void;
   onTypeChange?: (type: CipherType) => void;
 }) {
   return (
@@ -69,21 +71,32 @@ export function CipherDetail({
           <Box marginTop={1} flexShrink={0} gap={1}>
             <Button
               doubleConfirm
-              width="50%"
+              width="49%"
               isActive={isFocused}
               onClick={() => onSave(selectedCipher!)}
             >
               Save
             </Button>
             {mode !== "new" && (
+              <>
+              <Button
+                width="25%"
+                activeBorderColor="yellow"
+                isActive={isFocused}
+                onClick={() =>onReset()}
+                >
+                Reset
+              </Button>
               <Button
                 tripleConfirm
-                width="50%"
+                width="25%"
+                activeBorderColor="red"
                 isActive={isFocused}
                 onClick={() => onDelete(selectedCipher!)}
-              >
+                >
                 Delete
               </Button>
+                </>
             )}
           </Box>
         </Box>

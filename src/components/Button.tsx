@@ -5,6 +5,7 @@ import { useMouseTarget } from "../hooks/use-mouse.js";
 
 type Props = {
   isActive?: boolean;
+  activeBorderColor?: string;
   doubleConfirm?: boolean;
   tripleConfirm?: boolean;
   autoFocus?: boolean;
@@ -14,6 +15,7 @@ type Props = {
 
 export const Button = ({
   isActive = true,
+  activeBorderColor,
   doubleConfirm,
   tripleConfirm,
   onClick,
@@ -61,7 +63,7 @@ export const Button = ({
     <Box
       ref={boxRef}
       borderStyle="round"
-      borderColor={isFocused && isActive ? primary : "gray"}
+      borderColor={isFocused && isActive ? activeBorderColor ?? primary : "gray"}
       alignItems="center"
       justifyContent="center"
       {...props}
