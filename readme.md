@@ -23,9 +23,6 @@ Works also with Vaultwarden.
 
 If you check "Remember me" during login, your vault encryption keys will be stored in plain text in your home folder (`$HOME/.config/bitty/config.json`). Use this option only if you are the only user of your machine.
 
-## TODO
-
-- Test Fido, Duo MFA support
 
 ## Acknowledgments
 - [Bitwarden whitepaper](https://bitwarden.com/help/bitwarden-security-white-paper)

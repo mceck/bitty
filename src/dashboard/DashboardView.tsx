@@ -98,6 +98,23 @@ export function DashboardView({ onLogout }: Props) {
       return;
     }
 
+    if (key.shift && key.rightArrow) {
+      setActiveTab((prev) => {
+        if (prev === "main") return "more";
+        if (prev === "more") return syncState?.collections?.length ? "collections" : "main";
+        return "main";
+      });
+      return;
+    }
+    if (key.shift && key.leftArrow) {
+      setActiveTab((prev) => {
+        if (prev === "main") return syncState?.collections?.length ? "collections" : "more";
+        if (prev === "more") return "main";
+        return "more";
+      });
+      return;
+    }
+
     if (input === "/" && focusedComponent !== "search") {
       setFocusedComponent("search");
       focus("search");
