@@ -176,7 +176,7 @@ export function MainTab({
     <Box flexDirection="column" gap={1}>
       {mode === "new" && (
         <Box flexDirection="row" gap={1}>
-          <Box width={12} flexShrink={0}>
+          <Box width={10} flexShrink={0}>
             <Text bold color={isFocused ? primaryLight : "gray"}>
               Type:
             </Text>
