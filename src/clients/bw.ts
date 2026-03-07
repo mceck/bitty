@@ -19,6 +19,7 @@
  */
 
 import crypto from "node:crypto";
+import http from "node:http";
 import * as argon2 from "argon2";
 
 export class FetchError extends Error {
@@ -594,6 +595,164 @@ export class Client {
       userKey,
       privateKey,
     };
+    this.syncCache = null;
+    this.decryptedSyncCache = null;
+    this.orgKeys = {};
+  }
+
+  /**
+   * SSO Login flow:
+   * 1. Generate PKCE code_verifier + code_challenge
+   * 2. Open browser to /connect/authorize with org identifier
+   * 3. Start local HTTP server to receive the callback with auth code
+   * 4. Exchange auth code for tokens at /connect/token (grant_type=authorization_code)
+   * 5. Returns the token response - caller must then provide master password to decrypt keys
+   */
+  async loginSso(
+    orgIdentifier: string,
+    onOpenBrowser: (url: string) => void,
+  ): Promise<{ identityReq: any; ssoEmail: string }> {
+    // Generate PKCE
+    const codeVerifier = crypto.randomBytes(32).toString("base64url");
+    const codeChallenge = crypto
+      .createHash("sha256")
+      .update(codeVerifier)
+      .digest("base64url");
+    const state = crypto.randomBytes(32).toString("base64url");
+
+    // Prevalidate the org identifier
+    await fetchApi(
+      `${this.apiUrl}/organization/domain/sso/verified?domainHint=${encodeURIComponent(orgIdentifier)}`,
+      { method: "GET" },
+    ).catch(() => {
+      // Prevalidation not supported on all servers (e.g. Vaultwarden), continue anyway
+    });
+
+    // Start local callback server
+    const port = 8065;
+    const redirectUri = `http://localhost:${port}`;
+    const { code, receivedState } = await new Promise<{
+      code: string;
+      receivedState: string;
+    }>((resolve, reject) => {
+      const server = http.createServer((req, res) => {
+        const url = new URL(req.url!, `http://localhost:${port}`);
+        const code = url.searchParams.get("code");
+        const receivedState = url.searchParams.get("state");
+        const error = url.searchParams.get("error");
+
+        res.writeHead(200, { "Content-Type": "text/html" });
+        if (code) {
+          res.end(
+            "<html><body><h1>Authentication successful!</h1><p>You can close this window and return to BiTTY.</p></body></html>",
+          );
+        } else {
+          res.end(
+            `<html><body><h1>Authentication failed</h1><p>${error || "No code received"}</p></body></html>`,
+          );
+        }
+
+        server.close();
+        if (code && receivedState) {
+          resolve({ code, receivedState });
+        } else {
+          reject(new Error(error || "SSO callback did not include an authorization code"));
+        }
+      });
+
+      server.listen(port, () => {
+        // Build authorize URL and open browser
+        const authorizeUrl = new URL(`${this.identityUrl}/connect/authorize`);
+        authorizeUrl.searchParams.set("client_id", "web");
+        authorizeUrl.searchParams.set("redirect_uri", redirectUri);
+        authorizeUrl.searchParams.set("response_type", "code");
+        authorizeUrl.searchParams.set("scope", "api offline_access");
+        authorizeUrl.searchParams.set("state", state);
+        authorizeUrl.searchParams.set("code_challenge", codeChallenge);
+        authorizeUrl.searchParams.set("code_challenge_method", "S256");
+        authorizeUrl.searchParams.set("domain_hint", orgIdentifier);
+        onOpenBrowser(authorizeUrl.toString());
+      });
+
+      server.on("error", (err) => reject(err));
+
+      // Timeout after 2 minutes
+      setTimeout(() => {
+        server.close();
+        reject(new Error("SSO login timed out"));
+      }, 120_000);
+    });
+
+    if (receivedState !== state) {
+      throw new Error("SSO state mismatch - possible CSRF attack");
+    }
+
+    // Exchange authorization code for tokens
+    const bodyParams = new URLSearchParams();
+    bodyParams.append("grant_type", "authorization_code");
+    bodyParams.append("code", code);
+    bodyParams.append("code_verifier", codeVerifier);
+    bodyParams.append("redirect_uri", redirectUri);
+    bodyParams.append("client_id", "web");
+    bodyParams.append("deviceName", "chrome");
+    bodyParams.append("deviceType", "9");
+    bodyParams.append("deviceIdentifier", DEVICE_IDENTIFIER);
+
+    const identityReq = await fetchApi(`${this.identityUrl}/connect/token`, {
+      method: "POST",
+      headers: {
+        accept: "*/*",
+        "accept-language": "en-US",
+        "bitwarden-client-name": "web",
+        "bitwarden-client-version": "2025.9.0",
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+      },
+      body: bodyParams.toString(),
+    }).then((r) => r.json());
+
+    this.token = identityReq.access_token;
+    this.refreshToken = identityReq.refresh_token;
+    this.tokenExpiration = Date.now() + identityReq.expires_in * 1000;
+
+    // Extract email from JWT claims
+    let ssoEmail = "";
+    try {
+      const payload = JSON.parse(
+        Buffer.from(identityReq.access_token.split(".")[1], "base64").toString(),
+      );
+      ssoEmail = payload.email || "";
+    } catch {}
+
+    return { identityReq, ssoEmail };
+  }
+
+  /**
+   * After SSO authentication, decrypt vault keys using master password.
+   * The SSO token response contains encrypted Key and PrivateKey that need
+   * the master password to decrypt.
+   */
+  async completeSsoLogin(
+    email: string,
+    password: string,
+    identityReq: any,
+  ): Promise<void> {
+    const prelogin = await fetchApi(`${this.identityUrl}/accounts/prelogin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    }).then((r) => r.json());
+
+    const keys = await mcbw.deriveMasterKey(email, password, prelogin);
+    this.keys = keys;
+
+    const { userKey, privateKey } = mcbw.decodeUserKeys(
+      identityReq.Key,
+      identityReq.PrivateKey || "",
+      keys,
+    );
+
+    keys.masterKey = undefined;
+    this.keys = { ...keys, userKey, privateKey };
     this.syncCache = null;
     this.decryptedSyncCache = null;
     this.orgKeys = {};

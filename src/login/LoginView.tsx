@@ -1,5 +1,6 @@
 import { Box, Text, useFocusManager, useInput, useStdout } from "ink";
 import { useEffect, useState } from "react";
+import { exec } from "node:child_process";
 import { TextInput } from "../components/TextInput.js";
 import { Button } from "../components/Button.js";
 import { primary } from "../theme/style.js";
@@ -26,6 +27,13 @@ export function LoginView({ onLogin }: Props) {
   > | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
   const [resendTimeout, setResendTimeout] = useState(0);
+  const [ssoMode, setSsoMode] = useState<
+    null | "identifier" | "waiting" | "password"
+  >(null);
+  const [ssoOrgId, setSsoOrgId] = useState("");
+  const [ssoIdentityReq, setSsoIdentityReq] = useState<any>(null);
+  const [ssoEmail, setSsoEmail] = useState("");
+  const [ssoPassword, setSsoPassword] = useState("");
   const { stdout } = useStdout();
   const { focusNext, focusPrevious } = useFocusManager();
   const { statusMessage, statusMessageColor, showStatusMessage } =
@@ -126,6 +134,69 @@ export function LoginView({ onLogin }: Props) {
       showStatusMessage(
         "Login failed, please check your credentials.",
         "error"
+      );
+    }
+  };
+
+  const openBrowser = (url: string) => {
+    const cmd =
+      process.platform === "darwin"
+        ? "open"
+        : process.platform === "win32"
+          ? "start"
+          : "xdg-open";
+    exec(`${cmd} "${url}"`);
+  };
+
+  const handleSsoStart = async () => {
+    if (!ssoOrgId?.trim().length) {
+      showStatusMessage("Please enter your organization identifier.", "error");
+      return;
+    }
+    if (url?.trim().length) {
+      bwClient.setUrls({ baseUrl: url });
+    }
+    setSsoMode("waiting");
+    try {
+      const { identityReq, ssoEmail: email } = await bwClient.loginSso(
+        ssoOrgId.trim(),
+        openBrowser,
+      );
+      setSsoIdentityReq(identityReq);
+      setSsoEmail(email);
+      setSsoMode("password");
+    } catch (e: any) {
+      showStatusMessage(e.message || "SSO login failed.", "error");
+      setSsoMode("identifier");
+    }
+  };
+
+  const handleSsoComplete = async () => {
+    if (!ssoPassword?.length) {
+      showStatusMessage("Please enter your master password.", "error");
+      return;
+    }
+    try {
+      await bwClient.completeSsoLogin(ssoEmail, ssoPassword, ssoIdentityReq);
+      if (!bwClient.refreshToken || !bwClient.keys)
+        throw new Error("Missing keys after SSO login");
+      onLogin();
+      if (rememberMe) {
+        saveConfig({
+          baseUrl: url?.trim().length ? url.trim() : undefined,
+          keys: bwClient.keys,
+          refreshToken: bwClient.refreshToken,
+        });
+      } else {
+        saveLoginHints({
+          email: ssoEmail || undefined,
+          baseUrl: url?.trim() || undefined,
+        });
+      }
+    } catch (e) {
+      showStatusMessage(
+        "Failed to decrypt vault. Check your master password.",
+        "error",
       );
     }
   };
@@ -269,6 +340,68 @@ export function LoginView({ onLogin }: Props) {
             </Box>
           )}
         </Box>
+      ) : ssoMode === "identifier" ? (
+        <Box flexDirection="column" width="50%">
+          <TextInput placeholder="Server URL" value={url} onChange={setUrl} />
+          <TextInput
+            autoFocus
+            placeholder="Organization identifier"
+            value={ssoOrgId}
+            onChange={setSsoOrgId}
+            onSubmit={() => handleSsoStart()}
+          />
+          <Box>
+            <Checkbox
+              label="Remember me (less secure)"
+              value={rememberMe}
+              width="50%"
+              onToggle={setRememberMe}
+            />
+            <Button width="50%" onClick={() => handleSsoStart()}>
+              Log In with SSO
+            </Button>
+          </Box>
+          <Button onClick={() => setSsoMode(null)}>Back</Button>
+          {statusMessage && (
+            <Box marginTop={1} width="100%" justifyContent="center">
+              <Text color={statusMessageColor}>{statusMessage}</Text>
+            </Box>
+          )}
+        </Box>
+      ) : ssoMode === "waiting" ? (
+        <Box flexDirection="column" width="50%">
+          <Text>Waiting for SSO authentication in your browser...</Text>
+          <Text dimColor>Complete the login in your browser, then return here.</Text>
+        </Box>
+      ) : ssoMode === "password" ? (
+        <Box flexDirection="column" width="50%">
+          <Text>SSO authentication successful{ssoEmail ? ` (${ssoEmail})` : ""}.</Text>
+          <Text dimColor>Enter your master password to decrypt the vault.</Text>
+          <TextInput
+            autoFocus
+            placeholder="Master password"
+            value={ssoPassword}
+            onChange={setSsoPassword}
+            onSubmit={() => handleSsoComplete()}
+            isPassword
+          />
+          <Box>
+            <Checkbox
+              label="Remember me (less secure)"
+              value={rememberMe}
+              width="50%"
+              onToggle={setRememberMe}
+            />
+            <Button width="50%" onClick={() => handleSsoComplete()}>
+              Unlock
+            </Button>
+          </Box>
+          {statusMessage && (
+            <Box marginTop={1} width="100%" justifyContent="center">
+              <Text color={statusMessageColor}>{statusMessage}</Text>
+            </Box>
+          )}
+        </Box>
       ) : (
         <Box flexDirection="column" width="50%">
           <TextInput placeholder="Server URL" value={url} onChange={setUrl} />
@@ -302,6 +435,9 @@ export function LoginView({ onLogin }: Props) {
               Log In
             </Button>
           </Box>
+          <Button onClick={() => setSsoMode("identifier")}>
+            Log In with SSO
+          </Button>
           {statusMessage && (
             <Box marginTop={1} width="100%" justifyContent="center">
               <Text color={statusMessageColor}>{statusMessage}</Text>
