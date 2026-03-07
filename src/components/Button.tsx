@@ -37,7 +37,10 @@ export const Button = ({
     }
     if (tripleConfirm && !ask2Confirm) {
       setAsk2Confirm(true);
-      timeoutRef.current = setTimeout(() => setAsk2Confirm(false), 1000);
+      timeoutRef.current = setTimeout(() => {
+        setAskConfirm(false);
+        setAsk2Confirm(false);
+      }, 1000);
       return;
     }
     if (askConfirm) setAskConfirm(false);
