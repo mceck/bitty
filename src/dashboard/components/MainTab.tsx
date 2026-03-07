@@ -189,6 +189,7 @@ export function MainTab({
           ] as const).map(([t, label]) => (
             <TabButton
               key={t}
+              borderLess
               active={selectedCipher.type === t}
               onClick={() => onTypeChange?.(t)}
             >

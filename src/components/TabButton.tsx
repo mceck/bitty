@@ -7,9 +7,10 @@ type Props = {
   active?: boolean;
   onClick: () => void;
   children: ReactNode;
+  borderLess?: boolean;
 };
 
-export const TabButton = ({ active, onClick, children }: Props) => {
+export const TabButton = ({ active, onClick, children, borderLess }: Props) => {
   const id = useId();
   const boxRef = useRef<DOMElement>(null);
   useMouseTarget(id, boxRef, { onClick });
@@ -17,7 +18,7 @@ export const TabButton = ({ active, onClick, children }: Props) => {
   return (
     <Box
       ref={boxRef}
-      borderStyle="round"
+      borderStyle={borderLess ? undefined : "round"}
       borderColor={active ? primary : "gray"}
       alignItems="center"
       justifyContent="center"

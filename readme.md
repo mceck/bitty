@@ -25,10 +25,7 @@ If you check "Remember me" during login, your vault encryption keys will be stor
 
 ## TODO
 
-- Collections support
 - Test Fido, Duo MFA support
-- Handle more fields editing
-- Handle creating different cipher types
 
 ## Acknowledgments
 - [Bitwarden whitepaper](https://bitwarden.com/help/bitwarden-security-white-paper)
