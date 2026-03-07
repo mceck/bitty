@@ -600,7 +600,7 @@ export class Client {
   }
 
   async sendEmailMfaCode(email: string) {
-    fetchApi(`${this.apiUrl}/two-factor/send-email-login`, {
+    return fetchApi(`${this.apiUrl}/two-factor/send-email-login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

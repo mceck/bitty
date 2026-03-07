@@ -76,6 +76,9 @@ export function LoginView({ onLogin }: Props) {
           }
           if (data.TwoFactorProviders) {
             const providers = data.TwoFactorProviders;
+            if (mfaParams) {
+              showStatusMessage("Invalid MFA code, please try again.", "error");
+            }
             if (providers.length === 1) {
               setMfaParams({
                 twoFactorProvider: providers[0],
@@ -83,8 +86,12 @@ export function LoginView({ onLogin }: Props) {
             } else if (providers.length > 1) {
               setAskMfa(providers);
             }
+            return;
           } else if (data.TwoFactorProviders2) {
             const providers = Object.keys(data.TwoFactorProviders2);
+            if (mfaParams) {
+              showStatusMessage("Invalid MFA code, please try again.", "error");
+            }
             if (providers.length === 1) {
               setMfaParams({
                 twoFactorProvider: providers[0],
@@ -92,6 +99,7 @@ export function LoginView({ onLogin }: Props) {
             } else if (providers.length > 1) {
               setAskMfa(providers);
             }
+            return;
           }
         } else {
           throw e;
@@ -254,6 +262,11 @@ export function LoginView({ onLogin }: Props) {
             >
               Resend Code
             </Button>
+          )}
+          {statusMessage && (
+            <Box marginTop={1} width="100%" justifyContent="center">
+              <Text color={statusMessageColor}>{statusMessage}</Text>
+            </Box>
           )}
         </Box>
       ) : (
