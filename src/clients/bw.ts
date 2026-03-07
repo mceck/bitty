@@ -923,6 +923,33 @@ export class Client {
     this.syncCache = null;
   }
 
+  async shareCipher(id: string, cipher: Partial<CipherDto>, collectionIds: string[]) {
+    if (!collectionIds.length) {
+      throw new Error("At least one collection is required to share a cipher");
+    }
+    await this.getDecryptedSync();
+    const original = this.syncCache?.ciphers.find((c) => c.id === id);
+    if (!original) {
+      throw new Error("Secret not found in cache. Please sync first.");
+    }
+    const key = this.getDecryptionKey(cipher);
+    const encrypted = this.encryptCipher(cipher, key);
+    const data = this.patchObject(original, encrypted);
+    (data as any).data = undefined;
+    await this.checkToken();
+    const s = await fetchApi(`${this.apiUrl}/ciphers/${id}/share`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ cipher: data, collectionIds }),
+    });
+    this.decryptedSyncCache = null;
+    this.syncCache = null;
+    return s.json();
+  }
+
   async updateCollections(id: string, collectionIds: string[]) {
     if(!collectionIds.length) {
       return;

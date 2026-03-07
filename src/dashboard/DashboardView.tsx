@@ -266,9 +266,25 @@ export function DashboardView({ onLogout }: Props) {
               }
             } else {
               try {
-                const originalCollections =
-                  sync?.ciphers.find((c) => c.id === cipher.id)?.collectionIds ?? [];
+                const original = sync?.ciphers.find((c) => c.id === cipher.id);
+                const originalOrgId = original?.organizationId ?? null;
+                const originalCollections = original?.collectionIds ?? [];
                 const newCollections = [...cipher.collectionIds ?? []];
+
+                // Sharing: personal cipher being assigned to an org
+                if (!originalOrgId && cipher.organizationId) {
+                  if (!newCollections.length) {
+                    showStatusMessage("Select at least one collection to share", "error");
+                    return;
+                  }
+                  await bwClient.shareCipher(cipher.id, cipher, newCollections);
+                  fetchSync();
+                  showStatusMessage("Shared!", "success");
+                  setFocusedComponent("list");
+                  setActiveTab("main");
+                  return;
+                }
+
                 const updated = await bwClient.updateSecret(cipher.id, cipher);
                 const collectionsChanged =
                   originalCollections.length !== newCollections.length ||

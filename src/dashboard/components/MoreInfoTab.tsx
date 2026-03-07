@@ -20,22 +20,20 @@ export function MoreInfoTab({
 }) {
   const { stdout } = useStdout();
   const [orgCursor, setOrgCursor] = useState(0);
+  const canChangeOrg = !selectedCipher.organizationId;
+  const orgOptions = canChangeOrg ? [{ id: null as string | null, name: "None (Personal)" }, ...organizations.map((o) => ({ id: o.id as string | null, name: o.name }))] : [];
 
   useInput(
     (_input, key) => {
+      if (!canChangeOrg) return;
       if (key.upArrow) setOrgCursor((c) => Math.max(0, c - 1));
-      else if (key.downArrow) setOrgCursor((c) => Math.min(organizations.length, c + 1));
+      else if (key.downArrow) setOrgCursor((c) => Math.min(orgOptions.length - 1, c + 1));
       else if (_input === " ") {
-        // index 0 = "None", rest = orgs
-        if (orgCursor === 0) {
-          onChange({ ...selectedCipher, organizationId: null, collectionIds: [] });
-        } else {
-          const org = organizations[orgCursor - 1];
-          onChange({ ...selectedCipher, organizationId: org.id, collectionIds: [] });
-        }
+        const selected = orgOptions[orgCursor];
+        onChange({ ...selectedCipher, organizationId: selected.id, collectionIds: [] });
       }
     },
-    { isActive: isFocused },
+    { isActive: isFocused && canChangeOrg },
   );
 
   return (
@@ -54,28 +52,39 @@ export function MoreInfoTab({
           />
         </Box>
       </Box>
-      {organizations.length > 0 && (
+      {canChangeOrg && organizations.length > 0 && (
         <Box flexDirection="column">
           <Text bold color={isFocused ? primaryLight : "gray"}>
             Organization:
           </Text>
-          <OrgOption
-            label="None (Personal)"
-            isCursor={orgCursor === 0 && isFocused}
-            selected={!selectedCipher.organizationId}
-            onFocus={() => setOrgCursor(0)}
-            onSelect={() => onChange({ ...selectedCipher, organizationId: null, collectionIds: [] })}
-          />
-          {organizations.map((org, idx) => (
-            <OrgOption
-              key={org.id}
-              label={org.name}
-              isCursor={orgCursor === idx + 1 && isFocused}
-              selected={selectedCipher.organizationId === org.id}
-              onFocus={() => setOrgCursor(idx + 1)}
-              onSelect={() => onChange({ ...selectedCipher, organizationId: org.id, collectionIds: [] })}
-            />
-          ))}
+          {orgOptions.map((opt, idx) => {
+            const checked = selectedCipher.organizationId === opt.id;
+            const isCursor = orgCursor === idx && isFocused;
+            return (
+              <OrgCheckbox
+                key={opt.id ?? "__none"}
+                label={opt.name}
+                isCursor={isCursor}
+                checked={checked}
+                onFocus={() => setOrgCursor(idx)}
+                onChange={() => onChange({ ...selectedCipher, organizationId: opt.id, collectionIds: [] })}
+              />
+            );
+          })}
+        </Box>
+      )}
+      {!!selectedCipher.organizationId && (
+        <Box flexDirection="row">
+          <Box width={18}>
+            <Text bold color={isFocused ? primaryLight : "gray"}>
+              Organization:
+            </Text>
+          </Box>
+          <Box flexGrow={1}>
+            <Text color="gray">
+              {organizations.find((o) => o.id === selectedCipher.organizationId)?.name ?? selectedCipher.organizationId}
+            </Text>
+          </Box>
         </Box>
       )}
       {!!selectedCipher.folderId && (
@@ -351,34 +360,53 @@ export function MoreInfoTab({
   );
 }
 
-function OrgOption({
+function OrgCheckbox({
   label,
   isCursor,
-  selected,
+  checked,
+  onChange,
   onFocus,
-  onSelect,
 }: {
   label: string;
   isCursor: boolean;
-  selected: boolean;
+  checked: boolean;
+  onChange: () => void;
   onFocus: () => void;
-  onSelect: () => void;
 }) {
-  const ref = useRef(null);
-  const id = useId();
+  const checkRef = useRef(null);
+  const labelRef = useRef(null);
+  const checkId = useId();
+  const labelId = useId();
 
-  useMouseTarget(id, ref, {
-    onClick: () => onSelect(),
+  useMouseTarget(checkId, checkRef, {
+    onClick: () => onChange(),
   });
 
+  useMouseTarget(labelId, labelRef, {
+    onClick: () => onFocus(),
+  });
+
+  useInput(
+    (input) => {
+      if (input === " ") {
+        onChange();
+      }
+    },
+    { isActive: isCursor },
+  );
+
   return (
-    <Box ref={ref} flexDirection="row" paddingLeft={1}>
-      <Text color={isCursor ? "white" : "gray"} bold={isCursor}>
-        {selected ? "(●) " : "( ) "}
-      </Text>
-      <Text color={isCursor ? "white" : "gray"}>
-        {label}
-      </Text>
+    <Box flexDirection="row">
+      <Box ref={checkRef}>
+        <Text color={isCursor ? "white" : "gray"} bold={isCursor}>
+          {checked ? "[x] " : "[ ] "}
+        </Text>
+      </Box>
+      <Box ref={labelRef}>
+        <Text color={isCursor ? "white" : "gray"}>
+          {label}
+        </Text>
+      </Box>
     </Box>
   );
 }
