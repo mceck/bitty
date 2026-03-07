@@ -254,7 +254,7 @@ export const TextInput = ({
     <Box
       ref={boxRef}
       borderStyle="round"
-      borderColor={isFocused ? primary : "gray"}
+      borderColor={isFocused ? primary : "#9f9f9f"}
       borderBottom={!inline}
       borderTop={!inline}
       borderLeft={!inline}
@@ -266,7 +266,7 @@ export const TextInput = ({
       minHeight={inline ? 1 : 3}
       {...props}
     >
-      <Text color={value ? "white" : "gray"}>{displayValue}</Text>
+      <Text color={value ? undefined : "#9f9f9f"}>{displayValue}</Text>
     </Box>
   );
 };

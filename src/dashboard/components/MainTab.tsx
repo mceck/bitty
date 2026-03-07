@@ -72,7 +72,7 @@ function Field({
   return (
     <Box flexDirection="row">
       <Box width={labelWidth} flexShrink={0}>
-        <Text bold color={isFocused ? primaryLight : "gray"}>
+        <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
           {label}:
         </Text>
       </Box>
@@ -177,7 +177,7 @@ export function MainTab({
       {mode === "new" && (
         <Box flexDirection="row" gap={1}>
           <Box width={10} flexShrink={0}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
+            <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
               Type:
             </Text>
           </Box>
@@ -225,7 +225,7 @@ export function MainTab({
         <Box flexDirection="row">
           <Box flexDirection="row" flexGrow={1}>
             <Box width={12} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
+              <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                 Password:
               </Text>
             </Box>
@@ -248,7 +248,7 @@ export function MainTab({
           {selectedCipher.login?.totp && (
             <Box flexDirection="row" width={20} flexShrink={0}>
               <Box flexShrink={0} width={12}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   OTP ({otpTimeout.toString().padStart(2, "0")}s):
                 </Text>
               </Box>
@@ -305,7 +305,7 @@ export function MainTab({
           <Box flexDirection="row" gap={2}>
             <Box flexDirection="row" flexGrow={1}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Exp Month:
                 </Text>
               </Box>
@@ -320,7 +320,7 @@ export function MainTab({
             </Box>
             <Box flexDirection="row" flexGrow={1}>
               <Box width={10} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Exp Year:
                 </Text>
               </Box>
@@ -350,7 +350,7 @@ export function MainTab({
           <Box flexDirection="row" gap={2}>
             <Box flexDirection="row" width="50%" flexShrink={0}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Title:
                 </Text>
               </Box>
@@ -365,7 +365,7 @@ export function MainTab({
             </Box>
             <Box flexDirection="row" width="50%" flexShrink={0}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   First Name:
                 </Text>
               </Box>
@@ -382,7 +382,7 @@ export function MainTab({
           <Box flexDirection="row" gap={2}>
             <Box flexDirection="row" width="50%" flexShrink={0}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Middle:
                 </Text>
               </Box>
@@ -397,7 +397,7 @@ export function MainTab({
             </Box>
             <Box flexDirection="row" width="50%" flexShrink={0}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Last Name:
                 </Text>
               </Box>
@@ -414,7 +414,7 @@ export function MainTab({
           <Box flexDirection="row" gap={2}>
             <Box flexDirection="row" width="50%" flexShrink={0}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Username:
                 </Text>
               </Box>
@@ -429,7 +429,7 @@ export function MainTab({
             </Box>
             <Box flexDirection="row" width="50%" flexShrink={0}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Company:
                 </Text>
               </Box>
@@ -446,7 +446,7 @@ export function MainTab({
           <Box flexDirection="row" gap={2}>
             <Box flexDirection="row" width="50%" flexShrink={0}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Email:
                 </Text>
               </Box>
@@ -461,7 +461,7 @@ export function MainTab({
             </Box>
             <Box flexDirection="row" width="50%" flexShrink={0}>
               <Box width={12} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Phone:
                 </Text>
               </Box>
@@ -498,7 +498,7 @@ export function MainTab({
 
       <Box flexDirection="row">
         <Box width={selectedCipher.type === CipherType.SSHKey ? 12 : 11} flexShrink={0}>
-          <Text bold color={isFocused ? primaryLight : "gray"}>
+          <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
             Notes:
           </Text>
         </Box>

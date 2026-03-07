@@ -40,8 +40,8 @@ export function CipherDetail({
       flexGrow={1}
       paddingX={1}
       borderStyle="round"
-      borderColor={isFocused ? primaryLight : "gray"}
-      borderLeftColor="gray"
+      borderColor={isFocused ? primaryLight : "#9f9f9f"}
+      borderLeftColor="#9f9f9f"
     >
       {selectedCipher && (
         <Box flexDirection="column" justifyContent="space-between" flexGrow={1}>
@@ -80,6 +80,7 @@ export function CipherDetail({
             {mode !== "new" && (
               <>
               <Button
+                doubleConfirm
                 width="25%"
                 activeBorderColor="yellow"
                 isActive={isFocused}

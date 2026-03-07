@@ -63,7 +63,7 @@ export const Button = ({
     <Box
       ref={boxRef}
       borderStyle="round"
-      borderColor={isFocused && isActive ? activeBorderColor ?? primary : "gray"}
+      borderColor={isFocused && isActive ? activeBorderColor ?? primary : "#9f9f9f"}
       alignItems="center"
       justifyContent="center"
       {...props}
@@ -76,7 +76,7 @@ export const Button = ({
               : askConfirm
               ? "yellow"
               : "white"
-            : "gray"
+            : "#9f9f9f"
         }
       >
         {ask2Confirm ? "Are you sure?" : askConfirm ? "Confirm?" : children}

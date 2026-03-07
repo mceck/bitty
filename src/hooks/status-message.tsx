@@ -12,7 +12,7 @@ const statusMessageContext = createContext<{
   ) => void;
 }>({
   statusMessage: null,
-  statusMessageColor: "gray",
+  statusMessageColor: "#9f9f9f",
   showStatusMessage: () => {},
 });
 
@@ -48,7 +48,7 @@ export const StatusMessageProvider = ({
       ? "green"
       : messageType === "warning"
       ? "yellow"
-      : "gray";
+      : "#9f9f9f";
 
   return (
     <SMProvider

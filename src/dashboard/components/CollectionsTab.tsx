@@ -31,7 +31,7 @@ export function CollectionsTab({
   if (!collections.length) {
     return (
       <Box flexDirection="column" height={stdout.rows - 18}>
-        <Text color="gray">No writable collections available.</Text>
+        <Text color="#9f9f9f">No writable collections available.</Text>
       </Box>
     );
   }
@@ -99,12 +99,12 @@ export function CollectionsTab({
     return (
       <Box key={col.id} flexDirection="row">
         <Box ref={checkRef}>
-          <Text color={isCursor ? "white" : "gray"} bold={isCursor}>
+          <Text color={isCursor ? "white" : "#9f9f9f"} bold={isCursor}>
             {checked ? "[x] " : "[ ] "}
           </Text>
         </Box>
         <Box ref={labelRef}>
-          <Text color={isCursor ? "white" : "gray"}>
+          <Text color={isCursor ? "white" : "#9f9f9f"}>
             {col.name}
           </Text>
         </Box>

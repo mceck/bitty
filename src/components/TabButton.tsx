@@ -19,12 +19,12 @@ export const TabButton = ({ active, onClick, children, borderLess }: Props) => {
     <Box
       ref={boxRef}
       borderStyle={borderLess ? undefined : "round"}
-      borderColor={active ? primary : "gray"}
+      borderColor={active ? primary : "#9f9f9f"}
       alignItems="center"
       justifyContent="center"
       paddingX={1}
     >
-      <Text color={active ? "white" : "gray"}>{children}</Text>
+      <Text color={active ? "white" : "#9f9f9f"}>{children}</Text>
     </Box>
   );
 };

@@ -141,7 +141,7 @@ export const MouseProvider = ({
         if (match) {
           const button = parseInt(match[1]!, 10);
           const x = parseInt(match[2]!, 10) - 1;
-          const y = parseInt(match[3]!, 10) - 1;
+          const y = parseInt(match[3]!, 10) - 2;
           const isPress = match[4] === "M";
 
           if (isPress && (button & 3) === 0) {

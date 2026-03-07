@@ -96,8 +96,8 @@ export function VaultList({
       flexDirection="column"
       width="40%"
       borderStyle="round"
-      borderColor={isFocused ? primaryLight : "gray"}
-      borderRightColor="gray"
+      borderColor={isFocused ? primaryLight : "#9f9f9f"}
+      borderRightColor="#9f9f9f"
       paddingX={1}
       overflow="hidden"
     >

@@ -40,11 +40,11 @@ export const Checkbox = ({
         height={3}
         flexShrink={0}
         borderStyle="round"
-        borderColor={isFocused && isActive ? primary : "gray"}
+        borderColor={isFocused && isActive ? primary : "#9f9f9f"}
       >
         {value && (
           <Box width={1} height={1} marginLeft={1}>
-            <Text color={isFocused && isActive ? primary : "gray"}>X</Text>
+            <Text color={isFocused && isActive ? primary : "#9f9f9f"}>X</Text>
           </Box>
         )}
       </Box>

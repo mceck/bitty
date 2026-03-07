@@ -1,5 +1,5 @@
 import { Box, Text, useInput, useStdout } from "ink";
-import { useRef, useId, useState } from "react";
+import { useRef, useId, useState, useMemo } from "react";
 import { Cipher, CipherType } from "../../clients/bw.js";
 import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
@@ -21,16 +21,35 @@ export function MoreInfoTab({
   const { stdout } = useStdout();
   const [orgCursor, setOrgCursor] = useState(0);
   const canChangeOrg = !selectedCipher.organizationId;
-  const orgOptions = canChangeOrg ? [{ id: null as string | null, name: "None (Personal)" }, ...organizations.map((o) => ({ id: o.id as string | null, name: o.name }))] : [];
+  const orgOptions = canChangeOrg
+    ? [
+        { id: null as string | null, name: "None (Personal)" },
+        ...organizations.map((o) => ({
+          id: o.id as string | null,
+          name: o.name,
+        })),
+      ]
+    : [];
+
+  const organizationName = useMemo(() => {
+    if (!selectedCipher.organizationId) return "Personal";
+    const org = organizations.find((o) => o.id === selectedCipher.organizationId);
+    return org ? org.name : "Unknown Organization";
+  }, [selectedCipher.organizationId, organizations]);
 
   useInput(
     (_input, key) => {
       if (!canChangeOrg) return;
       if (key.upArrow) setOrgCursor((c) => Math.max(0, c - 1));
-      else if (key.downArrow) setOrgCursor((c) => Math.min(orgOptions.length - 1, c + 1));
+      else if (key.downArrow)
+        setOrgCursor((c) => Math.min(orgOptions.length - 1, c + 1));
       else if (_input === " ") {
         const selected = orgOptions[orgCursor];
-        onChange({ ...selectedCipher, organizationId: selected?.id, collectionIds: [] });
+        onChange({
+          ...selectedCipher,
+          organizationId: selected?.id,
+          collectionIds: [],
+        });
       }
     },
     { isActive: isFocused && canChangeOrg },
@@ -40,7 +59,7 @@ export function MoreInfoTab({
     <Box flexDirection="column" gap={1} height={stdout.rows - 18}>
       <Box flexDirection="row">
         <Box width={9} flexShrink={0}>
-          <Text bold color={isFocused ? primaryLight : "gray"}>
+          <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
             ID:
           </Text>
         </Box>
@@ -55,7 +74,7 @@ export function MoreInfoTab({
       {selectedCipher.type === CipherType.Login && (
         <Box flexDirection="row">
           <Box width={9} flexShrink={0}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
+            <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
               TOTP:
             </Text>
           </Box>
@@ -78,7 +97,7 @@ export function MoreInfoTab({
       )}
       {canChangeOrg && organizations.length > 0 && (
         <Box flexDirection="column">
-          <Text bold color={isFocused ? primaryLight : "gray"}>
+          <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
             Organization:
           </Text>
           {orgOptions.map((opt, idx) => {
@@ -91,7 +110,13 @@ export function MoreInfoTab({
                 isCursor={isCursor}
                 checked={checked}
                 onFocus={() => setOrgCursor(idx)}
-                onChange={() => onChange({ ...selectedCipher, organizationId: opt.id, collectionIds: [] })}
+                onChange={() =>
+                  onChange({
+                    ...selectedCipher,
+                    organizationId: opt.id,
+                    collectionIds: [],
+                  })
+                }
               />
             );
           })}
@@ -100,21 +125,23 @@ export function MoreInfoTab({
       {!!selectedCipher.organizationId && (
         <Box flexDirection="row">
           <Box width={18}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
+            <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
               Organization:
             </Text>
           </Box>
           <Box flexGrow={1}>
-            <Text color="gray">
-              {organizations.find((o) => o.id === selectedCipher.organizationId)?.name ?? selectedCipher.organizationId}
-            </Text>
+            <TextInput
+              inline
+              isActive={isFocused}
+              value={organizationName}
+            />
           </Box>
         </Box>
       )}
       {!!selectedCipher.folderId && (
         <Box flexDirection="row">
           <Box width={18}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
+            <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
               Folder ID:
             </Text>
           </Box>
@@ -131,7 +158,7 @@ export function MoreInfoTab({
         <Box flexDirection="column" gap={1}>
           <Box flexDirection="row">
             <Box width={9} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
+              <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                 Address:
               </Text>
             </Box>
@@ -151,7 +178,7 @@ export function MoreInfoTab({
           </Box>
           <Box flexDirection="row">
             <Box width={9} flexShrink={0}>
-              <Text bold color={isFocused ? primaryLight : "gray"}>
+              <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                 City:
               </Text>
             </Box>
@@ -172,7 +199,7 @@ export function MoreInfoTab({
           <Box flexDirection="row" flexGrow={1} gap={1}>
             <Box flexDirection="row" width="40%" flexShrink={0}>
               <Box width={9} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   State:
                 </Text>
               </Box>
@@ -192,7 +219,7 @@ export function MoreInfoTab({
             </Box>
             <Box flexDirection="row" width="60%" flexShrink={0}>
               <Box width={13} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Postal Code:
                 </Text>
               </Box>
@@ -217,7 +244,7 @@ export function MoreInfoTab({
           <Box flexDirection="row" flexGrow={1} gap={1}>
             <Box flexDirection="row" width="40%" flexShrink={0}>
               <Box width={9} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Country:
                 </Text>
               </Box>
@@ -237,7 +264,7 @@ export function MoreInfoTab({
             </Box>
             <Box flexDirection="row" width="60%" flexShrink={0}>
               <Box width={13} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   License:
                 </Text>
               </Box>
@@ -262,7 +289,7 @@ export function MoreInfoTab({
           <Box flexDirection="row" flexGrow={1} gap={1}>
             <Box flexDirection="row" width="40%" flexShrink={0}>
               <Box width={9} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   SSN:
                 </Text>
               </Box>
@@ -284,7 +311,7 @@ export function MoreInfoTab({
             </Box>
             <Box flexDirection="row" width="60%" flexShrink={0}>
               <Box width={13} flexShrink={0}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   Passport:
                 </Text>
               </Box>
@@ -311,7 +338,7 @@ export function MoreInfoTab({
       {selectedCipher.type === CipherType.SSHKey && (
         <Box flexDirection="row">
           <Box width={13} flexShrink={0}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
+            <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
               Fingerprint:
             </Text>
           </Box>
@@ -326,13 +353,13 @@ export function MoreInfoTab({
       )}
       {!!selectedCipher.fields?.length && (
         <Box flexDirection="column">
-          <Text bold color={isFocused ? primaryLight : "gray"}>
+          <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
             Fields:
           </Text>
           {selectedCipher.fields?.map((field, idx) => (
             <Box flexDirection="row" key={idx} paddingLeft={2}>
               <Box width={16}>
-                <Text bold color={isFocused ? primaryLight : "gray"}>
+                <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
                   {field.name || idx}:
                 </Text>
               </Box>
@@ -355,7 +382,7 @@ export function MoreInfoTab({
       )}
       {!!selectedCipher.login?.uris?.length && (
         <Box flexDirection="column">
-          <Text bold color={isFocused ? primaryLight : "gray"}>
+          <Text bold color={isFocused ? primaryLight : "#9f9f9f"}>
             Uris:
           </Text>
           {selectedCipher.login.uris.map((uri, idx) => (
@@ -422,14 +449,12 @@ function OrgCheckbox({
   return (
     <Box flexDirection="row">
       <Box ref={checkRef}>
-        <Text color={isCursor ? "white" : "gray"} bold={isCursor}>
+        <Text color={isCursor ? "white" : "#9f9f9f"} bold={isCursor}>
           {checked ? "[x] " : "[ ] "}
         </Text>
       </Box>
       <Box ref={labelRef}>
-        <Text color={isCursor ? "white" : "gray"}>
-          {label}
-        </Text>
+        <Text color={isCursor ? "white" : "#9f9f9f"}>{label}</Text>
       </Box>
     </Box>
   );

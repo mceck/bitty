@@ -81,6 +81,9 @@ export function DashboardView({ onLogout }: Props) {
       setFocusedComponent("list");
     } else {
       setFocusedComponent("detail");
+      if(focusedComponent !== "detail") {
+        setShowDetails(false);
+      }
     }
   });
 
@@ -115,7 +118,7 @@ export function DashboardView({ onLogout }: Props) {
       return;
     }
 
-    if (input === "/" && focusedComponent !== "search") {
+    if (input === "/" && focusedComponent === "list") {
       setFocusedComponent("search");
       focus("search");
       return;
@@ -159,7 +162,7 @@ export function DashboardView({ onLogout }: Props) {
   }, [showDetails]);
 
   return (
-    <Box flexDirection="column" width="100%" height={stdout.rows - 1}>
+    <Box flexDirection="column" width="100%" height={stdout.rows - 2}>
       <Box
         borderStyle="double"
         borderColor={primary}
@@ -198,6 +201,15 @@ export function DashboardView({ onLogout }: Props) {
           )}
           {selectedCipher && (
             <Box gap={1} flexShrink={0}>
+              <TabButton
+                active={false}
+                onClick={async() => {
+                  await fetchSync();
+                  showStatusMessage("Refreshed!", "success");
+                }}
+              >
+                🔄
+              </TabButton>
               <TabButton
                 active={activeTab === "main"}
                 onClick={() => setActiveTab("main")}
@@ -249,7 +261,7 @@ export function DashboardView({ onLogout }: Props) {
           onReset={async ()=>{
             bwClient.decryptedSyncCache = null;
             await fetchSync(false);
-            showStatusMessage("Resetted", "success");
+            showStatusMessage("Resetted!", "success");
           }}
           onChange={(cipher) => {
             if (detailMode === "new") {
