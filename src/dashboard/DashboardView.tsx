@@ -221,6 +221,18 @@ export function DashboardView({ onLogout }: Props) {
             );
             setSyncState((prev) => ({ ...prev!, ciphers: updatedCiphers! }));
           }}
+          onDelete={async (cipher) => {
+            showStatusMessage("Deleting...");
+            try {
+              await bwClient.deleteSecret(cipher.id);
+              fetchSync();
+              showStatusMessage("Deleted!", "success");
+              setFocusedComponent("list");
+              setActiveTab("main");
+            } catch (e) {
+              showStatusMessage("Delete error", "error");
+            }
+          }}
           onSave={async (cipher) => {
             showStatusMessage("Saving...");
             if (detailMode === "new") {

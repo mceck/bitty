@@ -911,6 +911,18 @@ export class Client {
     return s.json();
   }
 
+  async deleteSecret(id: string) {
+    await this.checkToken();
+    await fetchApi(`${this.apiUrl}/ciphers/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+      },
+    });
+    this.decryptedSyncCache = null;
+    this.syncCache = null;
+  }
+
   async updateCollections(id: string, collectionIds: string[]) {
     if(!collectionIds.length) {
       return;
