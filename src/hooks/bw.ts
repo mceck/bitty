@@ -192,7 +192,7 @@ export function createEmptyCipher(type: CipherType = CipherType.Login): any {
     case CipherType.Login:
       return { ...base, login: { ...emptyLogin } };
     case CipherType.SecureNote:
-      return base;
+      return { ...base, secureNote: { type: 0 } };
     case CipherType.Card:
       return { ...base, card: { ...emptyCard } };
     case CipherType.Identity:

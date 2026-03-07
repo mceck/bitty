@@ -255,6 +255,10 @@ export function DashboardView({ onLogout }: Props) {
             showStatusMessage("Saving...");
             if (detailMode === "new") {
               try {
+                if (cipher.organizationId && !cipher.collectionIds?.length) {
+                  showStatusMessage("Select at least one collection", "error");
+                  return;
+                }
                 await bwClient.createSecret(cipher);
                 fetchSync();
                 showStatusMessage("Saved!", "success");
