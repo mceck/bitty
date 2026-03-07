@@ -63,6 +63,11 @@ export function DashboardView({ onLogout }: Props) {
     [syncState, editedCipher, filteredCiphers[listIndex]]
   );
 
+  const organizations = useMemo(
+    () => (syncState?.profile?.organizations ?? []).map(({ id, name }) => ({ id, name })),
+    [syncState]
+  );
+
   const logout = async () => {
     bwClient.logout();
     await clearConfig();
@@ -214,6 +219,7 @@ export function DashboardView({ onLogout }: Props) {
           mode={detailMode}
           activeTab={activeTab}
           collections={writableCollections}
+          organizations={organizations}
           isFocused={focusedComponent === "detail"}
           onTypeChange={(type) => {
             const fresh = createEmptyCipher(type);

@@ -2,7 +2,7 @@ import { Box } from "ink";
 import { primaryLight } from "../../theme/style.js";
 import { Cipher, CipherType, Collection } from "../../clients/bw.js";
 import { Button } from "../../components/Button.js";
-import { MoreInfoTab } from "./MoreInfoTab.js";
+import { MoreInfoTab, Organization } from "./MoreInfoTab.js";
 import { MainTab } from "./MainTab.js";
 import { CollectionsTab } from "./CollectionsTab.js";
 
@@ -14,6 +14,7 @@ export function CipherDetail({
   mode,
   activeTab,
   collections,
+  organizations,
   onChange,
   onSave,
   onDelete,
@@ -24,6 +25,7 @@ export function CipherDetail({
   mode: "view" | "new";
   activeTab: DetailTab;
   collections: Collection[];
+  organizations: Organization[];
   onChange: (cipher: Cipher) => void;
   onSave: (cipher: Cipher) => void;
   onDelete: (cipher: Cipher) => void;
@@ -45,6 +47,7 @@ export function CipherDetail({
             <MoreInfoTab
               isFocused={isFocused}
               selectedCipher={selectedCipher}
+              organizations={organizations}
               onChange={onChange}
             />
           ) : activeTab === "collections" ? (

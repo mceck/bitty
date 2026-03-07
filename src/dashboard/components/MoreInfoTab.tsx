@@ -1,18 +1,43 @@
-import { Box, Text, useFocusManager, useStdout } from "ink";
+import { Box, Text, useInput, useStdout } from "ink";
+import { useRef, useId, useState } from "react";
 import { Cipher, CipherType } from "../../clients/bw.js";
 import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
+import { useMouseTarget } from "../../hooks/use-mouse.js";
+
+export type Organization = { id: string; name: string };
 
 export function MoreInfoTab({
   isFocused,
   selectedCipher,
+  organizations,
   onChange,
 }: {
   isFocused: boolean;
   selectedCipher: Cipher;
+  organizations: Organization[];
   onChange: (cipher: Cipher) => void;
 }) {
   const { stdout } = useStdout();
+  const [orgCursor, setOrgCursor] = useState(0);
+
+  useInput(
+    (_input, key) => {
+      if (key.upArrow) setOrgCursor((c) => Math.max(0, c - 1));
+      else if (key.downArrow) setOrgCursor((c) => Math.min(organizations.length, c + 1));
+      else if (_input === " ") {
+        // index 0 = "None", rest = orgs
+        if (orgCursor === 0) {
+          onChange({ ...selectedCipher, organizationId: null, collectionIds: [] });
+        } else {
+          const org = organizations[orgCursor - 1];
+          onChange({ ...selectedCipher, organizationId: org.id, collectionIds: [] });
+        }
+      }
+    },
+    { isActive: isFocused },
+  );
+
   return (
     <Box flexDirection="column" gap={1} height={stdout.rows - 18}>
       <Box flexDirection="row">
@@ -29,36 +54,28 @@ export function MoreInfoTab({
           />
         </Box>
       </Box>
-      {!!selectedCipher.organizationId && (
-        <Box flexDirection="row">
-          <Box width={18}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
-              Organization ID:
-            </Text>
-          </Box>
-          <Box flexGrow={1}>
-            <TextInput
-              inline
-              isActive={isFocused}
-              value={selectedCipher.organizationId ?? ""}
+      {organizations.length > 0 && (
+        <Box flexDirection="column">
+          <Text bold color={isFocused ? primaryLight : "gray"}>
+            Organization:
+          </Text>
+          <OrgOption
+            label="None (Personal)"
+            isCursor={orgCursor === 0 && isFocused}
+            selected={!selectedCipher.organizationId}
+            onFocus={() => setOrgCursor(0)}
+            onSelect={() => onChange({ ...selectedCipher, organizationId: null, collectionIds: [] })}
+          />
+          {organizations.map((org, idx) => (
+            <OrgOption
+              key={org.id}
+              label={org.name}
+              isCursor={orgCursor === idx + 1 && isFocused}
+              selected={selectedCipher.organizationId === org.id}
+              onFocus={() => setOrgCursor(idx + 1)}
+              onSelect={() => onChange({ ...selectedCipher, organizationId: org.id, collectionIds: [] })}
             />
-          </Box>
-        </Box>
-      )}
-      {!!selectedCipher.collectionIds?.length && (
-        <Box flexDirection="row">
-          <Box width={18}>
-            <Text bold color={isFocused ? primaryLight : "gray"}>
-              Collection IDs:
-            </Text>
-          </Box>
-          <Box flexGrow={1}>
-            <Box flexDirection="column">
-              {selectedCipher.collectionIds?.map((id) => (
-                <TextInput key={id} inline isActive={isFocused} value={id} />
-              )) || <Text>-</Text>}
-            </Box>
-          </Box>
+          ))}
         </Box>
       )}
       {!!selectedCipher.folderId && (
@@ -330,6 +347,38 @@ export function MoreInfoTab({
           ))}
         </Box>
       )}
+    </Box>
+  );
+}
+
+function OrgOption({
+  label,
+  isCursor,
+  selected,
+  onFocus,
+  onSelect,
+}: {
+  label: string;
+  isCursor: boolean;
+  selected: boolean;
+  onFocus: () => void;
+  onSelect: () => void;
+}) {
+  const ref = useRef(null);
+  const id = useId();
+
+  useMouseTarget(id, ref, {
+    onClick: () => onSelect(),
+  });
+
+  return (
+    <Box ref={ref} flexDirection="row" paddingLeft={1}>
+      <Text color={isCursor ? "white" : "gray"} bold={isCursor}>
+        {selected ? "(●) " : "( ) "}
+      </Text>
+      <Text color={isCursor ? "white" : "gray"}>
+        {label}
+      </Text>
     </Box>
   );
 }
