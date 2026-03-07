@@ -6,6 +6,7 @@ import { useMouseTarget } from "../hooks/use-mouse.js";
 type Props = {
   isActive?: boolean;
   doubleConfirm?: boolean;
+  tripleConfirm?: boolean;
   autoFocus?: boolean;
   onClick: () => void;
   children: ReactNode;
@@ -14,6 +15,7 @@ type Props = {
 export const Button = ({
   isActive = true,
   doubleConfirm,
+  tripleConfirm,
   onClick,
   children,
   autoFocus = false,
@@ -22,17 +24,24 @@ export const Button = ({
   const generatedId = useId();
   const { isFocused } = useFocus({ id: generatedId, autoFocus: autoFocus });
   const [askConfirm, setAskConfirm] = useState(false);
+  const [ask2Confirm, setAsk2Confirm] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const boxRef = useRef<DOMElement>(null);
 
   const handlePress = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (doubleConfirm && !askConfirm) {
+    if ((doubleConfirm || tripleConfirm) && !askConfirm) {
       setAskConfirm(true);
       timeoutRef.current = setTimeout(() => setAskConfirm(false), 1000);
       return;
     }
+    if (tripleConfirm && !ask2Confirm) {
+      setAsk2Confirm(true);
+      timeoutRef.current = setTimeout(() => setAsk2Confirm(false), 1000);
+      return;
+    }
     if (askConfirm) setAskConfirm(false);
+    if (ask2Confirm) setAsk2Confirm(false);
     onClick();
   };
 
@@ -56,10 +65,16 @@ export const Button = ({
     >
       <Text
         color={
-          isFocused && isActive ? (askConfirm ? "yellow" : "white") : "gray"
+          isFocused && isActive
+            ? ask2Confirm
+              ? "red"
+              : askConfirm
+              ? "yellow"
+              : "white"
+            : "gray"
         }
       >
-        {askConfirm ? "Confirm?" : children}
+        {ask2Confirm ? "Are you sure?" : askConfirm ? "Confirm?" : children}
       </Text>
     </Box>
   );

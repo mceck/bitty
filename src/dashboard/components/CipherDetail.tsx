@@ -77,7 +77,7 @@ export function CipherDetail({
             </Button>
             {mode !== "new" && (
               <Button
-                doubleConfirm
+                tripleConfirm
                 width="50%"
                 isActive={isFocused}
                 onClick={() => onDelete(selectedCipher!)}
