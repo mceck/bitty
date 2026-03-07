@@ -59,8 +59,8 @@ export function DashboardView({ onLogout }: Props) {
     detailMode === "new" ? editedCipher : filteredCiphers[listIndex];
 
   const writableCollections = useMemo(
-    () => (syncState?.collections ?? []).filter((c) => !c.readOnly),
-    [syncState]
+    () => (syncState?.collections ?? []).filter((c) => !c.readOnly && c.organizationId === selectedCipher?.organizationId),
+    [syncState, editedCipher, filteredCiphers[listIndex]]
   );
 
   const logout = async () => {
@@ -182,7 +182,7 @@ export function DashboardView({ onLogout }: Props) {
               >
                 More
               </TabButton>
-              {!!writableCollections.length && (
+              {!!syncState?.collections?.length && selectedCipher.organizationId && (
                 <TabButton
                   active={activeTab === "collections"}
                   onClick={() =>
@@ -236,10 +236,10 @@ export function DashboardView({ onLogout }: Props) {
               }
             } else {
               try {
-                const updated = await bwClient.updateSecret(cipher.id, cipher);
                 const originalCollections =
                   sync?.ciphers.find((c) => c.id === cipher.id)?.collectionIds ?? [];
-                const newCollections = cipher.collectionIds ?? [];
+                const newCollections = [...cipher.collectionIds ?? []];
+                const updated = await bwClient.updateSecret(cipher.id, cipher);
                 const collectionsChanged =
                   originalCollections.length !== newCollections.length ||
                   originalCollections.some((id) => !newCollections.includes(id));

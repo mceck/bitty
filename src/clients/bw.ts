@@ -912,6 +912,9 @@ export class Client {
   }
 
   async updateCollections(id: string, collectionIds: string[]) {
+    if(!collectionIds.length) {
+      return;
+    }
     await this.checkToken();
     const s = await fetchApi(`${this.apiUrl}/ciphers/${id}/collections_v2`, {
       method: "PUT",
