@@ -199,13 +199,14 @@ class Bw {
       kdfParallelism?: number;
     }
   ): Promise<BwKeys> {
+    const normalizedEmail = email.trim().toLowerCase();
     let masterKey: Uint8Array;
     if (prelogin.kdf === KdfType.PBKDF2) {
-      masterKey = this.derivePbkdf2(password, email, prelogin.kdfIterations);
+      masterKey = this.derivePbkdf2(password, normalizedEmail, prelogin.kdfIterations);
     } else {
       masterKey = await this.deriveArgon2(
         password,
-        email,
+        normalizedEmail,
         prelogin.kdfIterations,
         prelogin.kdfMemory!,
         prelogin.kdfParallelism!
@@ -514,8 +515,9 @@ export class Client {
 
   setUrls(uri: ClientConfig) {
     if (uri.baseUrl) {
-      this.apiUrl = uri.baseUrl + "/api";
-      this.identityUrl = uri.baseUrl + "/identity";
+      const base = uri.baseUrl.replace(/\/+$/, "");
+      this.apiUrl = base + "/api";
+      this.identityUrl = base + "/identity";
     } else {
       this.apiUrl = uri.apiUrl!;
       this.identityUrl = uri.identityUrl!;
@@ -622,12 +624,17 @@ export class Client {
       if (!this.refreshToken) {
         throw new Error("No refresh token available. Please login first.");
       }
+      const bodyParams = new URLSearchParams();
+      bodyParams.append("refresh_token", this.refreshToken);
+      bodyParams.append("grant_type", "refresh_token");
+      bodyParams.append("client_id", "web");
+      bodyParams.append("scope", "api offline_access");
       const identityReq = await fetchApi(`${this.identityUrl}/connect/token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: `refresh_token=${this.refreshToken}&grant_type=refresh_token&client_id=web&scope=api%20offline_access`,
+        body: bodyParams.toString(),
       }).then((r) => r.json());
 
       this.token = identityReq.access_token;
