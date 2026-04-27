@@ -50,7 +50,8 @@ export function VaultList({
   useInput(
     (input, key) => {
       const cipher = selected !== null ? filteredCiphers[selected] : null;
-      let field, fldName;
+      let field: string | null | undefined;
+      let fldName: string | undefined;
       if (key.ctrl && input === "y") {
         switch (cipher?.type) {
           case CipherType.Login:
@@ -84,8 +85,9 @@ export function VaultList({
         }
       }
       if (field) {
-        clipboard.writeSync(field);
-        showStatusMessage(`📋 Copied ${fldName} to clipboard!`, "success");
+        clipboard.write(field).then(() => {
+          showStatusMessage(`📋 Copied ${fldName} to clipboard!`, "success");
+        });
       }
     },
     { isActive: isFocused }
