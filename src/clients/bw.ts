@@ -200,6 +200,19 @@ export interface BwKeys {
 }
 
 const DEVICE_IDENTIFIER = "928f9664-5559-4a7b-9853-caf5bfa5dd57";
+const DEVICE_TYPE = "9"; // ChromeBrowser → ClientName::Web in the SDK
+const CLIENT_NAME = "web";
+const CLIENT_VERSION = "2025.9.0";
+const USER_AGENT = "Bitwarden_Bitty";
+
+const defaultHeaders = (): Record<string, string> => ({
+  "Device-Identifier": DEVICE_IDENTIFIER,
+  "Bitwarden-Client-Name": CLIENT_NAME,
+  "Bitwarden-Client-Version": CLIENT_VERSION,
+  "Device-Type": DEVICE_TYPE,
+  "User-Agent": USER_AGENT,
+});
+
 class Bw {
   /**
    * Derives the master key and related keys from the user's email and password.
@@ -572,6 +585,8 @@ export class Client {
       const prelogin = await fetchApi(`${this.identityUrl}/accounts/prelogin`, {
         method: "POST",
         headers: {
+          ...defaultHeaders(),
+          Accept: "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
@@ -581,24 +596,24 @@ export class Client {
     }
 
     const bodyParams = new URLSearchParams();
-    bodyParams.append("username", email);
-    bodyParams.append("password", keys.masterPasswordHash!);
-    bodyParams.append("grant_type", "password");
-    bodyParams.append("deviceName", "chrome");
+    bodyParams.append("scope", "api offline_access");
+    bodyParams.append("client_id", "web");
     bodyParams.append("deviceType", "9");
     bodyParams.append("deviceIdentifier", DEVICE_IDENTIFIER);
-    bodyParams.append("client_id", "web");
-    bodyParams.append("scope", "api offline_access");
+    bodyParams.append("deviceName", "firefox");
+    bodyParams.append("grant_type", "password");
+    bodyParams.append("username", email);
+    bodyParams.append("password", keys.masterPasswordHash!);
     for (const [key, value] of Object.entries(opts || {})) {
       bodyParams.append(key, value);
     }
     const identityReq = await fetchApi(`${this.identityUrl}/connect/token`, {
       method: "POST",
       headers: {
-        accept: "*/*",
-        "accept-language": "en-US",
-        "bitwarden-client-name": "web",
-        "bitwarden-client-version": "2025.9.0",
+        ...defaultHeaders(),
+        Accept: "application/json",
+        "Cache-Control": "no-store",
+        Pragma: "no-cache",
         "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
       },
       body: bodyParams.toString(),
@@ -628,6 +643,8 @@ export class Client {
     return fetchApi(`${this.apiUrl}/two-factor/send-email-login`, {
       method: "POST",
       headers: {
+        ...defaultHeaders(),
+        Accept: "application/json",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -648,14 +665,17 @@ export class Client {
         throw new Error("No refresh token available. Please login first.");
       }
       const bodyParams = new URLSearchParams();
-      bodyParams.append("refresh_token", this.refreshToken);
       bodyParams.append("grant_type", "refresh_token");
+      bodyParams.append("refresh_token", this.refreshToken);
       bodyParams.append("client_id", "web");
-      bodyParams.append("scope", "api offline_access");
       const identityReq = await fetchApi(`${this.identityUrl}/connect/token`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          ...defaultHeaders(),
+          Accept: "application/json",
+          "Cache-Control": "no-store",
+          Pragma: "no-cache",
+          "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
         },
         body: bodyParams.toString(),
       }).then((r) => r.json());
@@ -676,8 +696,9 @@ export class Client {
     this.syncCache = await fetchApi(`${this.apiUrl}/sync?excludeDomains=true`, {
       method: "GET",
       headers: {
+        ...defaultHeaders(),
+        Accept: "application/json",
         Authorization: `Bearer ${this.token}`,
-        "bitwarden-client-version": "2025.9.0",
       },
     }).then((r) => r.json());
     this.decryptOrgKeys();
@@ -879,6 +900,8 @@ export class Client {
     const s = await fetchApi(url, {
       method: "POST",
       headers: {
+        // ...defaultHeaders(),
+        // Accept: "application/json",
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/json",
       },
@@ -931,6 +954,8 @@ export class Client {
     const s = await fetchApi(`${this.apiUrl}/ciphers/${id}`, {
       method: "PUT",
       headers: {
+        // ...defaultHeaders(),
+        // Accept: "application/json",
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/json",
       },
@@ -946,6 +971,8 @@ export class Client {
     await fetchApi(`${this.apiUrl}/ciphers/${id}`, {
       method: "DELETE",
       headers: {
+        // ...defaultHeaders(),
+        // Accept: "application/json",
         Authorization: `Bearer ${this.token}`,
       },
     });
@@ -970,6 +997,8 @@ export class Client {
     const s = await fetchApi(`${this.apiUrl}/ciphers/${id}/share`, {
       method: "PUT",
       headers: {
+        // ...defaultHeaders(),
+        // Accept: "application/json",
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/json",
       },
@@ -988,6 +1017,8 @@ export class Client {
     const s = await fetchApi(`${this.apiUrl}/ciphers/${id}/collections_v2`, {
       method: "PUT",
       headers: {
+        // ...defaultHeaders(),
+        // Accept: "application/json",
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/json",
       },

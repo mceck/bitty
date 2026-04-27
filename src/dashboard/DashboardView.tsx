@@ -175,7 +175,7 @@ export function DashboardView({ onLogout }: Props) {
         </Text>
       </Box>
 
-      <Box>
+      <Box flexShrink={0}>
         <Box width="40%">
           <TextInput
             id="search"

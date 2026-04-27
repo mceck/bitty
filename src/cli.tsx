@@ -32,10 +32,6 @@ if (args.includes("--help") || args.includes("-h")) {
   process.exit(0);
 }
 
-if (debugEnabled) {
-  console.error(`[debug] logging to ${debugLogPath}`);
-}
-
 render(
   <StatusMessageProvider>
     <MouseProvider>
