@@ -20,6 +20,7 @@
 
 import crypto from "node:crypto";
 import * as argon2 from "argon2";
+import { debugEnabled, debugLog } from "../debug.js";
 
 export class FetchError extends Error {
   status: number;
@@ -36,7 +37,29 @@ export class FetchError extends Error {
 }
 
 const fetchApi = async (...args: Parameters<typeof fetch>) => {
+  if (debugEnabled) {
+    const [input, init] = args;
+    const method = (init?.method ?? "GET").toUpperCase();
+    const url = input instanceof Request ? input.url : String(input);
+    const body = init?.body != null ? String(init.body) : "(none)";
+    const headers = new Headers(init?.headers);
+    const headersStr = [...headers.entries()]
+      .map(([k, v]) => `    ${k}: ${v}`)
+      .join("\n");
+    debugLog(`→ ${method} ${url}`);
+    debugLog(`  headers:\n${headersStr || "    (none)"}`);
+    debugLog(`  body: ${body}`);
+  }
+
   const response = await fetch(...args);
+
+  if (debugEnabled) {
+    const clone = response.clone();
+    const responseBody = await clone.text();
+    debugLog(`← ${response.status} ${response.statusText}`);
+    debugLog(`  response: ${responseBody}`);
+  }
+
   if (!response.ok) {
     const data = await response.text();
     throw new FetchError(response.status, data);
