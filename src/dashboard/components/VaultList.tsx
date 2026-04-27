@@ -85,9 +85,8 @@ export function VaultList({
         }
       }
       if (field) {
-        clipboard.write(field).then(() => {
-          showStatusMessage(`📋 Copied ${fldName} to clipboard!`, "success");
-        });
+        clipboard.write(field);
+        showStatusMessage(`📋 Copied ${fldName} to clipboard!`, "success");
       }
     },
     { isActive: isFocused }

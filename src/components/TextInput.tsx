@@ -139,9 +139,8 @@ export const TextInput = ({
         if (onCopy) {
           onCopy(value);
         } else {
-          clipboard.write(value).then(() => {
-            showStatusMessage("📋 Copied to clipboard!", "success");
-          });
+          clipboard.write(value);
+          showStatusMessage("📋 Copied to clipboard!", "success");
         }
       } else if (key.backspace || (key.delete && value?.length && cursor > 0)) {
         onChange?.(
