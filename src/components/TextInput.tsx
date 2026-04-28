@@ -222,7 +222,19 @@ export const TextInput = ({
           setCursor(value.length);
         }
       } else if (key.return) {
-        if (multiline && cursor > 0 && value[cursor - 1] === "\\") {
+        if (multiline && (key.shift || key.meta)) {
+          const newValue = value.slice(0, cursor) + "\n" + value.slice(cursor);
+          const newCursor = cursor + 1;
+          const newCurrentLine =
+            newValue.substring(0, newCursor).split("\n").length - 1;
+
+          if (newCurrentLine >= scrollOffset + maxLines) {
+            setScrollOffset(newCurrentLine - maxLines + 1);
+          }
+
+          onChange?.(newValue);
+          setCursor(newCursor);
+        } else if (multiline && cursor > 0 && value[cursor - 1] === "\\") {
           const newValue =
             value.slice(0, cursor - 1) + "\n" + value.slice(cursor);
           const newCurrentLine =

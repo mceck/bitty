@@ -40,5 +40,12 @@ render(
         <App />
       </MouseProvider>
     </StatusMessageProvider>
-  </KeybindingsProvider>
+  </KeybindingsProvider>,
+  {
+    exitOnCtrlC: false,
+    kittyKeyboard: {
+      mode: "enabled",
+      flags: ["disambiguateEscapeCodes"],
+    },
+  }
 );
