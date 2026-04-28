@@ -6,6 +6,7 @@ import clipboard from "clipboardy";
 import { useStatusMessage } from "../../hooks/status-message.js";
 import { useRef } from "react";
 import { useMouseTarget } from "../../hooks/use-mouse.js";
+import { matchBinding, useKeybindings } from "../../hooks/keybindings.js";
 
 const getTypeIcon = (type: CipherType) => {
   switch (type) {
@@ -35,6 +36,7 @@ export function VaultList({
 }) {
   const { stdout } = useStdout();
   const { showStatusMessage } = useStatusMessage();
+  const { keybindings } = useKeybindings();
   const boxRef = useRef<DOMElement>(null);
   const scrollOffsetRef = useRef(0);
   useMouseTarget("list", boxRef, {
@@ -52,7 +54,7 @@ export function VaultList({
       const cipher = selected !== null ? filteredCiphers[selected] : null;
       let field: string | null | undefined;
       let fldName: string | undefined;
-      if (key.ctrl && input === "y") {
+      if (matchBinding(input, key, keybindings.copyPrimary)) {
         switch (cipher?.type) {
           case CipherType.Login:
             field = cipher.login?.password;
@@ -67,7 +69,7 @@ export function VaultList({
             fldName = "Private Key";
             break;
         }
-      } else if (key.ctrl && input === "u") {
+      } else if (matchBinding(input, key, keybindings.copySecondary)) {
         switch (cipher?.type) {
           case CipherType.Login:
             field = cipher.login?.username;
@@ -78,7 +80,7 @@ export function VaultList({
             fldName = "Public Key";
             break;
         }
-      } else if (key.ctrl && input === "t") {
+      } else if (matchBinding(input, key, keybindings.copyTotp)) {
         if (cipher?.type === CipherType.Login) {
           field = cipher.login?.currentTotp;
           fldName = "TOTP";

@@ -12,6 +12,7 @@ import clipboard from "clipboardy";
 import chalk from "chalk";
 import { useStatusMessage } from "../hooks/status-message.js";
 import { useMouseTarget } from "../hooks/use-mouse.js";
+import { matchBinding, useKeybindings } from "../hooks/keybindings.js";
 
 type Props = {
   id?: string;
@@ -52,6 +53,7 @@ export const TextInput = ({
   const { isFocused } = useFocus({ id: effectiveId, isActive, autoFocus });
   const { showStatusMessage } = useStatusMessage();
   const { focusNext } = useFocusManager();
+  const { keybindings } = useKeybindings();
   const boxRef = useRef<DOMElement>(null);
   useMouseTarget(effectiveId, boxRef);
 
@@ -135,7 +137,7 @@ export const TextInput = ({
 
   useInput(
     (input, key) => {
-      if (key.ctrl && input === "y") {
+      if (matchBinding(input, key, keybindings.copyField)) {
         if (onCopy) {
           onCopy(value);
         } else {
@@ -147,7 +149,7 @@ export const TextInput = ({
           value.slice(0, Math.max(0, cursor - 1)) + value.slice(cursor)
         );
         setCursor(cursor - 1);
-      } else if (key.ctrl && input === "e") {
+      } else if (matchBinding(input, key, keybindings.cursorEnd)) {
         if (multiline) {
           const nextNewline = value.indexOf("\n", cursor);
           if (nextNewline !== -1) {
@@ -156,7 +158,7 @@ export const TextInput = ({
           }
         }
         setCursor(value.length);
-      } else if (key.ctrl && input === "a") {
+      } else if (matchBinding(input, key, keybindings.cursorStart)) {
         if (multiline) {
           const prevNewline = value.lastIndexOf("\n", Math.max(0, cursor - 1));
           if (prevNewline !== -1) {
