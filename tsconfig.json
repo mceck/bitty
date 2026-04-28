@@ -4,9 +4,11 @@
     "noUnusedParameters": false,
     "noUnusedLocals": false,
     "erasableSyntaxOnly": false,
+    "rootDir": "src",
     "outDir": "dist",
     "module": "node20",
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "types": ["node"]
   },
   "include": ["src"]
 }

@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
 } from "react";
+import { type EventEmitter } from "node:events";
 import {
   type DOMElement,
   useStdin,
@@ -57,7 +58,11 @@ export const MouseProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const { internal_eventEmitter } = useStdin();
+  // ink 7 removed internal_eventEmitter from PublicProps type, but it is still
+  // present at runtime inside the StdinContext. Cast through unknown to access it.
+  const { internal_eventEmitter } = useStdin() as unknown as {
+    internal_eventEmitter: EventEmitter;
+  };
   const { focus } = useFocusManager();
   const targetsRef = useRef<Map<string, TargetEntry>>(new Map());
   const listenersRef = useRef<Set<(id: string) => void>>(new Set());
