@@ -84,6 +84,8 @@ export function MoreInfoTab({
               isActive={isFocused}
               isPassword
               showPasswordOnFocus
+              scanQrOnPaste
+              placeholder="Secret or otpauth:// URI (or paste QR image with Ctrl+V)"
               value={selectedCipher.login?.totp ?? ""}
               onChange={(value) =>
                 onChange({

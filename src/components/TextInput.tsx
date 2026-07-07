@@ -13,6 +13,7 @@ import chalk from "chalk";
 import { useStatusMessage } from "../hooks/status-message.js";
 import { useMouseTarget } from "../hooks/use-mouse.js";
 import { matchBinding, useKeybindings } from "../hooks/keybindings.js";
+import { decodeQrFromClipboardImage } from "../utils/qrcode.js";
 
 type Props = {
   id?: string;
@@ -28,6 +29,7 @@ type Props = {
   inline?: boolean;
   multiline?: boolean;
   maxLines?: number;
+  scanQrOnPaste?: boolean;
 } & React.ComponentProps<typeof Box>;
 
 export const TextInput = ({
@@ -41,6 +43,7 @@ export const TextInput = ({
   inline,
   multiline,
   maxLines = 1,
+  scanQrOnPaste,
   onChange,
   onSubmit,
   onCopy,
@@ -137,7 +140,27 @@ export const TextInput = ({
 
   useInput(
     (input, key) => {
-      if (matchBinding(input, key, keybindings.copyField)) {
+      if (
+        scanQrOnPaste &&
+        !key.shift &&
+        (key.ctrl || key.meta) &&
+        input?.toLowerCase() === "v"
+      ) {
+        void (async () => {
+          try {
+            const decoded = await decodeQrFromClipboardImage();
+            if (decoded) {
+              onChange?.(decoded);
+              setCursor(decoded.length);
+              showStatusMessage("✅ QR code decoded from clipboard!", "success");
+            } else {
+              showStatusMessage("No QR code found on clipboard image", "error");
+            }
+          } catch {
+            showStatusMessage("Failed to read clipboard image", "error");
+          }
+        })();
+      } else if (matchBinding(input, key, keybindings.copyField)) {
         if (onCopy) {
           onCopy(value);
         } else {

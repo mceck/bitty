@@ -147,16 +147,19 @@ export function MainTab({
       const config = parseTotpConfig(selectedCipher.login.totp);
       const intervalSeconds = config.period ?? OTP_INTERVAL;
 
+      const remainingFor = (nowMs: number) =>
+        intervalSeconds - (Math.floor(nowMs / 1000) % intervalSeconds);
+
       void genOtp(config);
-      setOtpTimeout(intervalSeconds);
+      let lastRemaining = remainingFor(Date.now());
+      setOtpTimeout(lastRemaining);
       interval = setInterval(() => {
-        setOtpTimeout((t) => {
-          if (t <= 1) {
-            void genOtp(config);
-            return intervalSeconds;
-          }
-          return t - 1;
-        });
+        const remaining = remainingFor(Date.now());
+        if (remaining > lastRemaining) {
+          void genOtp(config);
+        }
+        lastRemaining = remaining;
+        setOtpTimeout(remaining);
       }, 1000);
     } else {
       setOtpCode("");
