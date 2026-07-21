@@ -4,20 +4,33 @@ import { CipherType } from "../clients/bw.js";
 import { currentTotpFor } from "../utils/totp.js";
 import { ensureSession } from "./auth.js";
 import { fail, printSuccess, renderTable } from "./ui.js";
-import { filterCiphers, forJson, orgNameIndex, resolveCipher, typeLabel } from "./vault.js";
-
-const GET_FIELDS = ["password", "username", "totp", "uri", "notes"] as const;
+import {
+  DEFAULT_FIELD_BY_TYPE,
+  FIELD_EXTRACTORS,
+  filterCiphers,
+  forJson,
+  orgNameIndex,
+  resolveCipher,
+  typeLabel,
+} from "./vault.js";
 
 export function registerReadCommands(program: Command): void {
   program
-    .command("get <name>")
+    .command("get [name]")
     .description("Print a single field from a vault item")
-    .option("--field <field>", `One of: ${GET_FIELDS.join(", ")}`, "password")
-    .option("--id <id>", "Disambiguate by item id")
+    .option(
+      "--field <field>",
+      "Item field to print (defaults to the item's most relevant field, e.g. password for logins, number for cards)"
+    )
+    .option("--id <id>", "Look up by item id (makes <name> optional)")
     .option("--folder <folderId>", "Disambiguate by folder id")
     .option("--json", "Print the full decrypted item as JSON instead")
     .option("--no-interactive", "Fail instead of prompting for input")
-    .action(async (name: string, opts) => {
+    .action(async (name: string | undefined, opts) => {
+      if (!name && !opts.id) {
+        fail("Provide an item name, or --id <id>.");
+      }
+
       await ensureSession({ interactive: opts.interactive });
       const cipher = await resolveCipher(name, {
         id: opts.id,
@@ -30,43 +43,27 @@ export function registerReadCommands(program: Command): void {
         return;
       }
 
-      if (!GET_FIELDS.includes(opts.field)) {
-        fail(`Unknown field "${opts.field}". Expected one of: ${GET_FIELDS.join(", ")}.`);
+      const field = opts.field ?? DEFAULT_FIELD_BY_TYPE[cipher.type] ?? "notes";
+
+      if (field === "totp") {
+        if (cipher.type !== CipherType.Login || !cipher.login?.totp) {
+          fail(`"${cipher.name}" has no TOTP configured.`);
+        }
+        const code = await currentTotpFor(cipher.login.totp);
+        if (!code) fail(`Could not generate a TOTP code for "${cipher.name}".`);
+        console.log(code);
+        return;
       }
 
-      switch (opts.field) {
-        case "notes":
-          if (!cipher.notes) fail(`"${cipher.name}" has no notes.`);
-          console.log(cipher.notes);
-          break;
-        case "password":
-          if (cipher.type !== CipherType.Login || !cipher.login?.password) {
-            fail(`"${cipher.name}" has no password field.`);
-          }
-          console.log(cipher.login.password);
-          break;
-        case "username":
-          if (cipher.type !== CipherType.Login || !cipher.login?.username) {
-            fail(`"${cipher.name}" has no username field.`);
-          }
-          console.log(cipher.login.username);
-          break;
-        case "uri":
-          if (cipher.type !== CipherType.Login || !cipher.login?.uri) {
-            fail(`"${cipher.name}" has no URI field.`);
-          }
-          console.log(cipher.login.uri);
-          break;
-        case "totp": {
-          if (cipher.type !== CipherType.Login || !cipher.login?.totp) {
-            fail(`"${cipher.name}" has no TOTP configured.`);
-          }
-          const code = await currentTotpFor(cipher.login.totp);
-          if (!code) fail(`Could not generate a TOTP code for "${cipher.name}".`);
-          console.log(code);
-          break;
-        }
+      const extractor = FIELD_EXTRACTORS[field];
+      if (!extractor) {
+        fail(
+          `Unknown field "${field}". Expected one of: totp, ${Object.keys(FIELD_EXTRACTORS).join(", ")}.`
+        );
       }
+      const value = extractor(cipher);
+      if (!value) fail(`"${cipher.name}" has no ${field} field.`);
+      console.log(value);
     });
 
   program

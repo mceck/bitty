@@ -42,25 +42,36 @@ export interface ResolveCipherOptions {
 }
 
 export async function resolveCipher(
-  name: string,
+  name: string | undefined,
   opts: ResolveCipherOptions
 ): Promise<Cipher> {
+  if (!name && !opts.id) {
+    fail("Provide an item name, or --id <id>.");
+  }
+
+  const description = [
+    name && `name "${name}"`,
+    opts.id && `id "${opts.id}"`,
+    opts.folder && `folder "${opts.folder}"`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   const sync = await bwClient.getDecryptedSync();
-  let matches = sync.ciphers.filter(
-    (c) => !c.deletedDate && c.name?.toLowerCase() === name.toLowerCase()
-  );
+  let matches = sync.ciphers.filter((c) => !c.deletedDate);
+  if (name) matches = matches.filter((c) => c.name?.toLowerCase() === name.toLowerCase());
   if (opts.id) matches = matches.filter((c) => c.id === opts.id);
   if (opts.folder) matches = matches.filter((c) => c.folderId === opts.folder);
 
   if (!matches.length) {
-    fail(`No item found matching "${name}".`, 2);
+    fail(`No item found matching ${description}.`, 2);
   }
   if (matches.length === 1) {
     return matches[0]!;
   }
 
   if (!opts.interactive) {
-    printError(`${matches.length} items match "${name}":`);
+    printError(`${matches.length} items match ${description}:`);
     for (const m of matches) {
       const folderHint = m.folderId ? style.dim(` (folder ${m.folderId})`) : "";
       console.error(`  ${style.dim(m.id)}  ${m.name}${folderHint}`);
@@ -70,7 +81,7 @@ export async function resolveCipher(
   }
 
   const pickedId = await promptSelect(
-    `Multiple items match "${name}", pick one`,
+    `Multiple items match ${description}, pick one`,
     matches.map((m) => ({
       title: `${m.name}  ${style.dim(m.id)}`,
       value: m.id,
@@ -78,6 +89,54 @@ export async function resolveCipher(
   );
   return matches.find((m) => m.id === pickedId)!;
 }
+
+// Fields printable via `get --field`, keyed by name. `totp` is handled separately
+// since generating the current code is async and only applies to Login items.
+export const FIELD_EXTRACTORS: Record<string, (cipher: Cipher) => string | null | undefined> = {
+  notes: (c) => c.notes,
+  // login
+  password: (c) => c.login?.password,
+  uri: (c) => c.login?.uri,
+  // shared between login and identity
+  username: (c) => c.login?.username ?? c.identity?.username,
+  // card
+  cardholderName: (c) => c.card?.cardholderName,
+  brand: (c) => c.card?.brand,
+  number: (c) => c.card?.number,
+  expMonth: (c) => c.card?.expMonth,
+  expYear: (c) => c.card?.expYear,
+  code: (c) => c.card?.code,
+  // identity
+  title: (c) => c.identity?.title,
+  firstName: (c) => c.identity?.firstName,
+  middleName: (c) => c.identity?.middleName,
+  lastName: (c) => c.identity?.lastName,
+  company: (c) => c.identity?.company,
+  email: (c) => c.identity?.email,
+  phone: (c) => c.identity?.phone,
+  address1: (c) => c.identity?.address1,
+  address2: (c) => c.identity?.address2,
+  address3: (c) => c.identity?.address3,
+  city: (c) => c.identity?.city,
+  state: (c) => c.identity?.state,
+  postalCode: (c) => c.identity?.postalCode,
+  country: (c) => c.identity?.country,
+  ssn: (c) => c.identity?.ssn,
+  passportNumber: (c) => c.identity?.passportNumber,
+  licenseNumber: (c) => c.identity?.licenseNumber,
+  // ssh key
+  privateKey: (c) => c.sshKey?.privateKey,
+  publicKey: (c) => c.sshKey?.publicKey,
+  keyFingerprint: (c) => c.sshKey?.keyFingerprint,
+};
+
+export const DEFAULT_FIELD_BY_TYPE: Record<CipherType, string> = {
+  [CipherType.Login]: "password",
+  [CipherType.SecureNote]: "notes",
+  [CipherType.Card]: "number",
+  [CipherType.Identity]: "email",
+  [CipherType.SSHKey]: "privateKey",
+};
 
 export interface ListFilters {
   search?: string;

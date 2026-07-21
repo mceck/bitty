@@ -167,10 +167,12 @@ export const TextInput = ({
           clipboard.write(value);
           showStatusMessage("📋 Copied to clipboard!", "success");
         }
-      } else if (key.backspace || (key.delete && value?.length && cursor > 0)) {
-        onChange?.(
-          value.slice(0, Math.max(0, cursor - 1)) + value.slice(cursor)
-        );
+      } else if (
+        (key.backspace || key.delete) &&
+        value?.length &&
+        cursor > 0
+      ) {
+        onChange?.(value.slice(0, cursor - 1) + value.slice(cursor));
         setCursor(cursor - 1);
       } else if (matchBinding(input, key, keybindings.cursorEnd)) {
         if (multiline) {
