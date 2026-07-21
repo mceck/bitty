@@ -1,6 +1,6 @@
 {
   "name": "bitty-tui",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "license": "MIT",
   "repository": "https://github.com/mceck/bitty",
   "keywords": [
@@ -23,7 +23,10 @@
     "build": "tsc",
     "prepublishOnly": "tsc",
     "watch": "tsc --watch",
-    "dev": "tsc && node dist/cli.js"
+    "dev": "tsc && node dist/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "files": [
     "dist"
@@ -48,10 +51,12 @@
     "@types/pngjs": "^6.0.5",
     "@types/prompts": "^2.4.9",
     "@types/react": "^19.2.14",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "ink-testing-library": "^4.0.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

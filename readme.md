@@ -50,6 +50,12 @@ bitty get github --no-interactive
 # error: not logged in. Run `bitty login --remember-me` first.
 ```
 
+For scripts/cron where prompting isn't an option, set `BITTY_EMAIL` and `BITTY_PASSWORD` in the environment: with `--no-interactive`, a command that needs the vault logs in with them automatically before running, without requiring `--remember-me`. That login is only kept in memory for the current invocation — nothing is written to the OS credential manager or to `~/.config/bitty/config.json`, so every invocation logs in again. Add `BITTY_TOTP` if the account needs a two-factor code, and `BITTY_SERVER_URL` to target a non-default server.
+
+```bash
+BITTY_EMAIL=me@example.com BITTY_PASSWORD=hunter2 bitty get github --no-interactive
+```
+
 ### Reading the vault
 
 ```bash

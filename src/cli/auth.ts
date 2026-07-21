@@ -20,6 +20,13 @@ export interface LoginOptions {
   interactive: boolean;
 }
 
+interface EnvLoginOptions {
+  email: string;
+  password: string;
+  totp?: string;
+  serverUrl?: string;
+}
+
 async function resolveMfa(
   email: string,
   providers: string[],
@@ -131,12 +138,70 @@ export async function logoutCommand(): Promise<void> {
   printSuccess("Logged out.");
 }
 
+async function envLogin(opts: EnvLoginOptions): Promise<void> {
+  const hints = await loadLoginHints();
+  const serverUrl = opts.serverUrl?.trim() || hints.baseUrl || DEFAULT_SERVER_URL;
+  bwClient.setUrls({ baseUrl: serverUrl });
+
+  try {
+    await bwClient.login(opts.email, opts.password, false, undefined);
+  } catch (e) {
+    if (!(e instanceof FetchError)) throw e;
+    let data: any;
+    try {
+      data = e.json();
+    } catch {
+      throw e;
+    }
+    const providers2 = data.TwoFactorProviders2;
+    const providers: string[] = (
+      data.TwoFactorProviders ?? (providers2 ? Object.keys(providers2) : []) ?? []
+    ).map(String);
+    if (!providers.length) {
+      fail("Login failed, please check BITTY_EMAIL/BITTY_PASSWORD.");
+    }
+    if (!opts.totp) {
+      fail("Account requires two-factor authentication; set BITTY_TOTP to log in via environment variables.");
+    }
+
+    const provider = providers.includes("0") ? "0" : providers[0]!;
+    try {
+      await bwClient.login(opts.email, opts.password, true, {
+        twoFactorProvider: provider,
+        twoFactorToken: opts.totp,
+        twoFactorRemember: 0,
+      });
+    } catch (e2) {
+      if (!(e2 instanceof FetchError)) throw e2;
+      fail("Two-factor authentication failed for BITTY_TOTP.");
+    }
+  }
+
+  printSuccess("Logged in using BITTY_EMAIL/BITTY_PASSWORD (session not persisted).");
+}
+
 export async function ensureSession(opts: { interactive: boolean }): Promise<void> {
   const loggedIn = await loadConfig();
   if (loggedIn) return;
 
   if (!opts.interactive) {
-    fail('Not logged in. Run "bitty login --remember-me" first, or drop --no-interactive to log in now.');
+    const email = process.env["BITTY_EMAIL"];
+    const password = process.env["BITTY_PASSWORD"];
+    if (email && password) {
+      await envLogin({
+        email,
+        password,
+        totp: process.env["BITTY_TOTP"],
+        serverUrl: process.env["BITTY_SERVER_URL"],
+      });
+      return;
+    }
+    if (email || password) {
+      fail("Both BITTY_EMAIL and BITTY_PASSWORD must be set to log in via environment variables.");
+    }
+    fail(
+      'Not logged in. Run "bitty login --remember-me" first, set BITTY_EMAIL/BITTY_PASSWORD env vars, or drop --no-interactive to log in now.'
+    );
   }
 
   printInfo("No saved session found, please log in.");
