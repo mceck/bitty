@@ -90,6 +90,13 @@ export function orgNameIndex(sync: SyncResponse): Map<string, string> {
   return new Map((sync.profile?.organizations ?? []).map((o) => [o.id, o.name]));
 }
 
+// The Bitwarden API includes a legacy `data` blob duplicating a cipher's other
+// fields in ciphertext; strip it before printing so --json only shows decrypted data.
+export function forJson(cipher: Cipher): Cipher {
+  const { data, ...rest } = cipher as Cipher & { data?: unknown };
+  return rest as Cipher;
+}
+
 export function filterCiphers(sync: SyncResponse, opts: ListFilters): Cipher[] {
   const orgIndex = orgNameIndex(sync);
   let list = sync.ciphers.filter((c) => !c.deletedDate);

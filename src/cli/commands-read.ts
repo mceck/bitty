@@ -4,7 +4,7 @@ import { CipherType } from "../clients/bw.js";
 import { currentTotpFor } from "../utils/totp.js";
 import { ensureSession } from "./auth.js";
 import { fail, printSuccess, renderTable } from "./ui.js";
-import { filterCiphers, orgNameIndex, resolveCipher, typeLabel } from "./vault.js";
+import { filterCiphers, forJson, orgNameIndex, resolveCipher, typeLabel } from "./vault.js";
 
 const GET_FIELDS = ["password", "username", "totp", "uri", "notes"] as const;
 
@@ -26,7 +26,7 @@ export function registerReadCommands(program: Command): void {
       });
 
       if (opts.json) {
-        console.log(JSON.stringify(cipher, null, 2));
+        console.log(JSON.stringify(forJson(cipher), null, 2));
         return;
       }
 
@@ -84,7 +84,7 @@ export function registerReadCommands(program: Command): void {
       const items = filterCiphers(sync, opts);
 
       if (opts.json) {
-        console.log(JSON.stringify(items, null, 2));
+        console.log(JSON.stringify(items.map(forJson), null, 2));
         return;
       }
 
