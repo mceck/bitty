@@ -110,17 +110,22 @@ export function LoginView({ onLogin }: Props) {
         throw new Error("Missing URL or keys after login");
 
       onLogin();
-      if (rememberMe) {
-        saveConfig({
-          baseUrl: url?.trim().length ? url.trim() : undefined,
-          keys: bwClient.keys,
-          refreshToken: bwClient.refreshToken,
-        });
-      } else {
-        saveLoginHints({
-          email: email?.trim() || undefined,
-          baseUrl: url?.trim() || undefined,
-        });
+      try {
+        if (rememberMe) {
+          await saveConfig({
+            baseUrl: url?.trim().length ? url.trim() : undefined,
+            keys: bwClient.keys,
+            refreshToken: bwClient.refreshToken,
+          });
+        } else {
+          await saveLoginHints({
+            email: email?.trim() || undefined,
+            baseUrl: url?.trim() || undefined,
+          });
+        }
+      } catch (e) {
+        // Login already succeeded; only persisting it for next time failed
+        // (e.g. the OS credential manager is unavailable), so don't block the user.
       }
     } catch (e) {
       showStatusMessage(

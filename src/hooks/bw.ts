@@ -3,6 +3,11 @@ import fs from "fs";
 import path from "path";
 import { BwKeys, CipherType, Client, SyncResponse } from "../clients/bw.js";
 import { useCallback, useEffect, useState } from "react";
+import {
+  deleteSessionSecret,
+  loadSessionSecret,
+  saveSessionSecret,
+} from "../utils/keychain.js";
 
 interface BwConfig {
   baseUrl?: string;
@@ -57,30 +62,35 @@ export async function loadConfig() {
       if (config.baseUrl) {
         await bwClient.setUrls({ baseUrl: config.baseUrl });
       }
-      if (config.keys && config.refreshToken) {
-        const keys: any = {};
-        if (config.keys.masterPasswordHash)
-          keys.masterPasswordHash = config.keys.masterPasswordHash;
-        if (config.keys.privateKey)
-          keys.privateKey = {
-            key: Uint8Array.from(config.keys.privateKey.key),
-            mac: Uint8Array.from(config.keys.privateKey.mac),
-          };
-        if (config.keys.encryptionKey)
-          keys.encryptionKey = {
-            key: Uint8Array.from(config.keys.encryptionKey.key),
-            mac: Uint8Array.from(config.keys.encryptionKey.mac),
-          };
-        if (config.keys.userKey)
-          keys.userKey = {
-            key: Uint8Array.from(config.keys.userKey.key),
-            mac: Uint8Array.from(config.keys.userKey.mac),
-          };
-        bwClient.keys = keys;
-        bwClient.refreshToken = config.refreshToken;
-        await bwClient.checkToken();
-        return true;
-      }
+    }
+
+    const secret = await loadSessionSecret();
+    if (!secret) return false;
+    const session = JSON.parse(secret);
+
+    if (session.keys && session.refreshToken) {
+      const keys: any = {};
+      if (session.keys.masterPasswordHash)
+        keys.masterPasswordHash = session.keys.masterPasswordHash;
+      if (session.keys.privateKey)
+        keys.privateKey = {
+          key: Uint8Array.from(session.keys.privateKey.key),
+          mac: Uint8Array.from(session.keys.privateKey.mac),
+        };
+      if (session.keys.encryptionKey)
+        keys.encryptionKey = {
+          key: Uint8Array.from(session.keys.encryptionKey.key),
+          mac: Uint8Array.from(session.keys.encryptionKey.mac),
+        };
+      if (session.keys.userKey)
+        keys.userKey = {
+          key: Uint8Array.from(session.keys.userKey.key),
+          mac: Uint8Array.from(session.keys.userKey.mac),
+        };
+      bwClient.keys = keys;
+      bwClient.refreshToken = session.refreshToken;
+      await bwClient.checkToken();
+      return true;
     }
   } catch (e) {
     bwClient.keys = {};
@@ -108,17 +118,26 @@ export async function saveConfig(config: BwConfig) {
       key: Array.from(config.keys.userKey.key),
       mac: Array.from(config.keys.userKey.mac),
     };
-  const encConfig = Buffer.from(
-    JSON.stringify({
-      ...config,
-      keys,
-    })
-  ).toString("base64");
+
+  await saveSessionSecret(
+    JSON.stringify({ keys, refreshToken: config.refreshToken })
+  );
+
+  let hints: any = {};
+  try {
+    if (fs.existsSync(configPath)) {
+      const content = await fs.promises.readFile(configPath, "utf-8");
+      hints = JSON.parse(Buffer.from(content, "base64").toString("utf-8"));
+    }
+  } catch {}
+  hints.baseUrl = config.baseUrl;
+  const encoded = Buffer.from(JSON.stringify(hints)).toString("base64");
   await fs.promises.mkdir(configDir, { recursive: true });
-  await fs.promises.writeFile(configPath, encConfig);
+  await fs.promises.writeFile(configPath, encoded);
 }
 
 export async function clearConfig() {
+  await deleteSessionSecret();
   if (fs.existsSync(configPath)) {
     await fs.promises.unlink(configPath);
   }

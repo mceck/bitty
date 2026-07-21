@@ -8,7 +8,7 @@ export function registerAuthCommands(program: Command): void {
     .option("--server-url <url>", "Vault server URL")
     .option("--email <email>", "Account email")
     .option("--totp <code>", "Two-factor authentication code")
-    .option("--remember-me", "Persist the session to ~/.config/bitty/config.json", false)
+    .option("--remember-me", "Persist the session in your OS credential manager", false)
     .option("--no-interactive", "Fail instead of prompting for input")
     .action(async (opts) => {
       await interactiveLogin({

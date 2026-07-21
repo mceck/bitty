@@ -21,7 +21,7 @@ Bitwarden compatible TUI for your terminal, usable also as a scriptable CLI.
 
 Works also with Vaultwarden.
 
-If you check "Remember me" during login, your vault encryption keys will be stored in plain text in your home folder (`$HOME/.config/bitty/config.json`). Use this option only if you are the only user of your machine.
+If you check "Remember me" during login, your vault encryption keys are stored securely in your OS credential manager (Keychain on macOS, Credential Manager on Windows, Secret Service/libsecret on Linux) via [@napi-rs/keyring](https://github.com/Brooooooklyn/keyring-node).
 
 ## CLI
 
@@ -33,7 +33,7 @@ bitty <command> [options]
 
 ### Session
 
-The CLI reuses the same session as the TUI (`~/.config/bitty/config.json`), so if you already logged in from the TUI with "Remember me" enabled, CLI commands work right away with no extra login step.
+The CLI reuses the same session as the TUI (stored in your OS credential manager, with only the server URL hint kept in `~/.config/bitty/config.json`), so if you already logged in from the TUI with "Remember me" enabled, CLI commands work right away with no extra login step.
 
 ```bash
 bitty login --remember-me   # log in once, persist the session for the CLI (and the TUI)
