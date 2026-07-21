@@ -4,53 +4,7 @@ import { primaryLight } from "../../theme/style.js";
 import { TextInput } from "../../components/TextInput.js";
 import { TabButton } from "../../components/TabButton.js";
 import { useEffect, useState } from "react";
-import { createGuardrails, generate, stringToBytes } from "otplib";
-const OTP_INTERVAL = 30;
-const OTP_GUARDRAILS = createGuardrails({
-  MIN_SECRET_BYTES: 1,
-  MAX_SECRET_BYTES: 1024,
-});
-
-type TotpConfig = {
-  secret: string;
-  period?: number;
-  digits?: 6 | 7 | 8;
-  algorithm?: "sha1" | "sha256" | "sha512";
-};
-
-function parseTotpConfig(value: string): TotpConfig {
-  if (!value.startsWith("otpauth://")) {
-    return { secret: value };
-  }
-
-  try {
-    const url = new URL(value);
-    const secret = url.searchParams.get("secret") ?? "";
-    const periodRaw = Number.parseInt(url.searchParams.get("period") ?? "", 10);
-    const digitsRaw = Number.parseInt(url.searchParams.get("digits") ?? "", 10);
-    const algorithmRaw = (url.searchParams.get("algorithm") ?? "").toLowerCase();
-
-    const period = Number.isFinite(periodRaw) && periodRaw > 0 ? periodRaw : undefined;
-    const digits =
-      digitsRaw === 6 || digitsRaw === 7 || digitsRaw === 8
-        ? digitsRaw
-        : undefined;
-    const algorithm =
-      algorithmRaw === "sha1" ||
-      algorithmRaw === "sha256" ||
-      algorithmRaw === "sha512"
-        ? algorithmRaw
-        : undefined;
-
-    return { secret, period, digits, algorithm };
-  } catch {
-    return { secret: value };
-  }
-}
-
-function normalizeBase32Secret(value: string): string {
-  return value.replace(/\s+/g, "").toUpperCase();
-}
+import { computeTotp, parseTotpConfig, TotpConfig, totpPeriod } from "../../utils/totp.js";
 
 function Field({
   label,
@@ -109,35 +63,15 @@ export function MainTab({
   const [otpTimeout, setOtpTimeout] = useState(0);
 
   const genOtp = async (config: TotpConfig) => {
-    if (config.secret) {
-      const normalizedSecret = normalizeBase32Secret(config.secret);
-      const options = {
-        guardrails: OTP_GUARDRAILS,
-        ...(config.period ? { period: config.period } : {}),
-        ...(config.digits ? { digits: config.digits } : {}),
-        ...(config.algorithm ? { algorithm: config.algorithm } : {}),
-      };
-
-      try {
-        const totp = await generate({ ...options, secret: normalizedSecret });
-        if (selectedCipher.login) {
-          selectedCipher.login.currentTotp = totp;
-        }
-        setOtpCode(totp);
-      } catch {
-        try {
-          const totp = await generate({
-            ...options,
-            secret: stringToBytes(config.secret),
-          });
-          if (selectedCipher.login) {
-            selectedCipher.login.currentTotp = totp;
-          }
-          setOtpCode(totp);
-        } catch {
-          setOtpCode("");
-        }
+    if (!config.secret) return;
+    const totp = await computeTotp(config);
+    if (totp) {
+      if (selectedCipher.login) {
+        selectedCipher.login.currentTotp = totp;
       }
+      setOtpCode(totp);
+    } else {
+      setOtpCode("");
     }
   };
 
@@ -145,7 +79,7 @@ export function MainTab({
     let interval: NodeJS.Timeout | null = null;
     if (selectedCipher?.login?.totp) {
       const config = parseTotpConfig(selectedCipher.login.totp);
-      const intervalSeconds = config.period ?? OTP_INTERVAL;
+      const intervalSeconds = totpPeriod(config);
 
       const remainingFor = (nowMs: number) =>
         intervalSeconds - (Math.floor(nowMs / 1000) % intervalSeconds);
