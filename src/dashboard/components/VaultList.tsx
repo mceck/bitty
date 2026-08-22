@@ -106,7 +106,7 @@ export function VaultList({
     >
       <ScrollView
         isActive={isFocused}
-        count={Math.max(stdout.rows - 14, 20)}
+        count={Math.max(stdout.rows - 14, 10)}
         list={filteredCiphers}
         selectedIndex={selected ?? 0}
         onSelect={onSelect}

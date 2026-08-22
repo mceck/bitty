@@ -262,7 +262,7 @@ export function DashboardView({ onLogout }: Props) {
             </Box>
           </Box>
 
-          <Box minHeight={20} flexGrow={1}>
+          <Box minHeight={10} flexGrow={1}>
             <VaultList
               filteredCiphers={filteredCiphers}
               isFocused={["list", "search"].includes(focusedComponent)}
